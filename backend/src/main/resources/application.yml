@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: lankaease-backend
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 50MB
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+lankaease:
+  jwt:
+    secret: 9a6e8b2c4d7f1a3e5b8c0d2e4f6a8b1c3d5e7f9a2b4c6d8e0f2a4b6c8d0e2f4a
+    access-token-expiration-ms: 86400000 # 24 hours
+    refresh-token-expiration-ms: 604800000 # 7 days
+  upload:
+    dir: ./uploads
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+  ai:
+    provider: mock # mock | openai | gemini
+    api-key: ${AI_API_KEY:mock-key}
+  payment:
+    provider: mock # mock | payhere | stripe
+    payhere:
+      merchant-id: ${PAYHERE_MERCHANT_ID:123456}
+      secret: ${PAYHERE_SECRET:mock-payhere-secret}
+    stripe:
+      secret: ${STRIPE_SECRET:mock-stripe-secret}
+  map:
+    provider: openstreetmap # openstreetmap | google
+    google-maps-key: ${GOOGLE_MAPS_API_KEY:mock-maps-key}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

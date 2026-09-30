@@ -1,0 +1,42 @@
+package com.lankaease.dto.response;
+
+import com.lankaease.entity.enums.RequestStatus;
+import com.lankaease.entity.enums.Urgency;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record ServiceRequestResponseDto(
+    Long id,
+    String requestCode,
+    Long customerId,
+    String customerName,
+    String customerPhone,
+    String customerImage,
+    Long familyMemberId,
+    String familyMemberName,
+    String familyMemberRelationship,
+    Long categoryId,
+    String categoryName,
+    String categorySlug,
+    Long providerId,
+    String providerName,
+    String providerBusinessName,
+    String providerPhone,
+    String problemDescription,
+    String aiSuggestion,
+    String address,
+    Double latitude,
+    Double longitude,
+    LocalDate preferredDate,
+    String preferredTime,
+    Urgency urgency,
+    RequestStatus status,
+    BigDecimal estimatedPrice,
+    BigDecimal finalPrice,
+    String cancelReason,
+    List<String> mediaUrls,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt
+) {}
