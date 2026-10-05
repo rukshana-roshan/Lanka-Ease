@@ -1,6 +1,3 @@
-# Frontend (Excluded)
-frontend/
-
 # Dependencies
 node_modules/
 

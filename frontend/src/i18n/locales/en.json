@@ -1,0 +1,49 @@
+{
+  "brand": {
+    "name": "LankaEase",
+    "tagline": "Everyday help, made easier."
+  },
+  "nav": {
+    "home": "Home",
+    "explore": "Explore",
+    "request": "Request",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "family": "Family Help",
+    "payments": "Payments",
+    "invoices": "Invoices",
+    "dashboard": "Dashboard",
+    "admin": "Admin Portal",
+    "provider": "Provider Hub",
+    "login": "Sign In",
+    "register": "Register",
+    "logout": "Log Out"
+  },
+  "home": {
+    "greeting": "Good Morning",
+    "what_help": "What do you need help with?",
+    "search_placeholder": "Describe your problem... (e.g., Washing machine leaking)",
+    "popular_services": "Popular Services",
+    "nearby_pros": "Nearby Professionals",
+    "recent_requests": "Recent Requests",
+    "smart_help": "Smart AI Service Suggestion",
+    "family_assistance": "Family Assistance",
+    "install_app": "Install LankaEase App",
+    "get_faster": "Get faster access directly from your phone screen."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "view_details": "View Details",
+    "verified": "Verified",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "rate_now": "Rate & Review",
+    "pay_now": "Pay Now",
+    "call": "Call Provider",
+    "chat": "Chat"
+  }
+}
