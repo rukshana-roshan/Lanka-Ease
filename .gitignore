@@ -1,5 +1,9 @@
+# Frontend (Excluded)
+frontend/
+
 # Dependencies
 node_modules/
+
 frontend/node_modules/
 
 # Production Builds
