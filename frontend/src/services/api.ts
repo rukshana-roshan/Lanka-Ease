@@ -9,7 +9,8 @@ import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../data/mockProvidersData';
 
 export { MOCK_CATEGORIES, MOCK_PROVIDERS };
 
-const API_BASE = '/api';
+const rawApiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = rawApiBase.endsWith('/') ? rawApiBase.slice(0, -1) : rawApiBase;
 
 // Helper for JWT Auth headers
 const getAuthHeaders = (): HeadersInit => {
