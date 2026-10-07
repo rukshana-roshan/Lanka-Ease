@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: lankaease-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lankaease-db
+          property: connectionString
+
+databases:
+  - name: lankaease-db
+    databaseName: lankaease
+    user: lankaease_user
+    plan: free
