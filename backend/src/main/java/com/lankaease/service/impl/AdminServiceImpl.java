@@ -84,16 +84,16 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public UserResponseDto createUser(RegisterCustomerRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.email())) {
             throw new BadRequestException("Email is already registered");
         }
         User user = new User();
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.CUSTOMER);
-        user.setPreferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "en");
+        user.setPreferredLanguage(request.preferredLanguage() != null ? request.preferredLanguage() : "en");
 
         User saved = userRepository.save(user);
         return mapToUserDto(saved);
