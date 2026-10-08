@@ -18,6 +18,13 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         String dbUrl = environment.getProperty("DATABASE_URL");
+        if (dbUrl == null || dbUrl.isEmpty()) {
+            dbUrl = environment.getProperty("DATABASE_PRIVATE_URL");
+        }
+        if (dbUrl == null || dbUrl.isEmpty()) {
+            dbUrl = environment.getProperty("DATABASE_PUBLIC_URL");
+        }
+
         if (dbUrl == null || dbUrl.isEmpty() || dbUrl.startsWith("jdbc:h2:")) {
             return;
         }
