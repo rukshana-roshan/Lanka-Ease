@@ -18,10 +18,16 @@ set JAVA_EXE=java.exe
 goto checkJava
 
 :setJavaHome
-set JAVA_EXE=%JAVA_HOME%\bin\java.exe
+set JAVA_EXE="%JAVA_HOME%\bin\java.exe"
 
 :checkJava
-if exist "%JAVA_EXE%" goto init
+if exist %JAVA_EXE% goto init
+if exist "java.exe" goto setJavaInPath
+where java >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    set JAVA_EXE=java
+    goto init
+)
 
 echo.
 echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
@@ -29,10 +35,10 @@ echo.
 goto error
 
 :init
-set WRAPPER_JAR="%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.jar"
+set WRAPPER_JAR=%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.jar
 set WRAPPER_LAUNCHER=org.apache.maven.wrapper.MavenWrapperMain
 
-%JAVA_EXE% -jar %WRAPPER_JAR% %MAVEN_CMD_LINE_ARGS%
+%JAVA_EXE% "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR%" -cp "%WRAPPER_JAR%" %WRAPPER_LAUNCHER% %MAVEN_CMD_LINE_ARGS%
 goto end
 
 :error

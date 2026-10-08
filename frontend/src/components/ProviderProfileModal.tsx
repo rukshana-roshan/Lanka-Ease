@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { SafeImage } from './SafeImage';
-import { Camera, X, Upload, Check, Briefcase, Link as LinkIcon, Sparkles, Phone, ShieldCheck, MapPin, DollarSign } from 'lucide-react';
+import { Camera, X, Upload, Check, Briefcase, Link as LinkIcon, Sparkles, Phone, MapPin } from 'lucide-react';
 
 interface ProviderProfileModalProps {
   isOpen: boolean;

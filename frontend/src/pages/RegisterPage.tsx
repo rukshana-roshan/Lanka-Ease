@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { SafeImage } from '../components/SafeImage';
 import { Wrench, User, Briefcase, CheckCircle, Camera, Upload } from 'lucide-react';
 import type { Role } from '../types';
 
 export const RegisterPage: React.FC = () => {
-  const { demoLogin, updateUser } = useAuth();
+  const { login, demoLogin, updateUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,17 +34,31 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    demoLogin(roleTab);
-    updateUser({
-      fullName: fullName || (roleTab === 'PROVIDER' ? 'Kasun Fernando' : 'Kamal Perera'),
-      email: email || (roleTab === 'PROVIDER' ? 'kasun@lankaease.lk' : 'customer@lankaease.lk'),
-      phone: phone || '+94772345678',
-      profileImage,
-    });
-    if (roleTab === 'PROVIDER') navigate('/provider');
-    else navigate('/app');
+    let res = null;
+    if (roleTab === 'PROVIDER') {
+      res = await api.registerProvider({ fullName, email, password, phone, businessName });
+    } else {
+      res = await api.registerCustomer({ fullName, email, password, phone });
+    }
+
+    if (res && res.token && res.user) {
+      login(res.token, res.user);
+      updateUser({ profileImage });
+      if (roleTab === 'PROVIDER') navigate('/provider');
+      else navigate('/app');
+    } else {
+      demoLogin(roleTab);
+      updateUser({
+        fullName: fullName || (roleTab === 'PROVIDER' ? 'Kasun Fernando' : 'Kamal Perera'),
+        email: email || (roleTab === 'PROVIDER' ? 'kasun@lankaease.lk' : 'customer@lankaease.lk'),
+        phone: phone || '+94772345678',
+        profileImage,
+      });
+      if (roleTab === 'PROVIDER') navigate('/provider');
+      else navigate('/app');
+    }
   };
 
   return (

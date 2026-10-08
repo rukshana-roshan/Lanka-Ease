@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { SafeImage } from './SafeImage';
-import { Camera, X, Upload, Check, User as UserIcon, Link as LinkIcon, Sparkles, Globe, Phone, Mail, ShieldCheck } from 'lucide-react';
+import { Camera, X, Upload, Check, User as UserIcon, Link as LinkIcon, Sparkles, Globe, Phone, Mail } from 'lucide-react';
 
 interface UserProfileModalProps {
   isOpen: boolean;

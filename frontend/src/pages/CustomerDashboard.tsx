@@ -12,9 +12,7 @@ import {
   ShieldCheck,
   Users,
   Car,
-  Camera,
-  User as UserIcon,
-  Sparkles
+  Camera
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

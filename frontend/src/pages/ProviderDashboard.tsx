@@ -9,9 +9,7 @@ import {
   ToggleRight,
   Camera,
   ShieldCheck,
-  MapPin,
-  CheckCircle,
-  Briefcase
+  MapPin
 } from 'lucide-react';
 
 export const ProviderDashboard: React.FC = () => {

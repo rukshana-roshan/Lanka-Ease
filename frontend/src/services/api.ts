@@ -9,7 +9,9 @@ import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../data/mockProvidersData';
 
 export { MOCK_CATEGORIES, MOCK_PROVIDERS };
 
-const API_BASE = '/api';
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://lanka-ease-production.up.railway.app').trim().replace(/\/$/, '');
+const BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl.slice(0, -4) : rawBaseUrl;
+const API_BASE = `${BASE_URL}/api`;
 
 // Helper for JWT Auth headers
 const getAuthHeaders = (): HeadersInit => {
@@ -320,7 +322,53 @@ export const api = {
     }
   },
 
+  // Authentication APIs
+  loginUser: async (credentials: { email: string; password: string }) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      if (!res.ok) throw new Error('Login failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend login fallback used:', err);
+      return null;
+    }
+  },
+
+  registerCustomer: async (data: { fullName: string; email: string; password: string; phone: string }) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Registration failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend customer registration fallback used:', err);
+      return null;
+    }
+  },
+
+  registerProvider: async (data: { fullName: string; email: string; password: string; phone: string; businessName?: string }) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register/provider`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Provider registration failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend provider registration fallback used:', err);
+      return null;
+    }
+  },
+
   getInvoicePdfUrl: (invoiceId: number) => {
-    return `/api/invoices/${invoiceId}/pdf`;
+    return `${API_BASE}/invoices/${invoiceId}/pdf`;
   },
 };

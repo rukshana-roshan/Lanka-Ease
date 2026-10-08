@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { Wrench, Mail, Lock, User, Briefcase, ShieldAlert, ArrowRight } from 'lucide-react';
 import type { Role } from '../types';
 
 export const LoginPage: React.FC = () => {
-  const { demoLogin } = useAuth();
+  const { login, demoLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('customer@lankaease.lk');
   const [password, setPassword] = useState('password123');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    demoLogin('CUSTOMER');
-    navigate('/app');
+    const res = await api.loginUser({ email, password });
+    if (res && res.token && res.user) {
+      login(res.token, res.user);
+      if (res.user.role === 'ADMIN') navigate('/admin');
+      else if (res.user.role === 'PROVIDER') navigate('/provider');
+      else navigate('/app');
+    } else {
+      demoLogin('CUSTOMER');
+      navigate('/app');
+    }
   };
 
   const handleDemoSelect = (role: Role) => {

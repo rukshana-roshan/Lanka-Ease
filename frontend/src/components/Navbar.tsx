@@ -16,8 +16,7 @@ import {
   Menu,
   X,
   ChevronRight,
-  Camera,
-  Settings
+  Camera
 } from 'lucide-react';
 import type { Role } from '../types';
 

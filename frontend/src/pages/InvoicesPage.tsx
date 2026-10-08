@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Download, CreditCard } from 'lucide-react';
+import { api } from '../services/api';
 
 export const InvoicesPage: React.FC = () => {
   const invoices = [
@@ -80,7 +81,7 @@ export const InvoicesPage: React.FC = () => {
 
             <div className="flex items-center gap-2 pt-2">
               <a
-                href={`/api/invoices/${inv.id}/pdf`}
+                href={api.getInvoicePdfUrl(inv.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"

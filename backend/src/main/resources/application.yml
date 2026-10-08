@@ -24,7 +24,7 @@ lankaease:
   upload:
     dir: ./uploads
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://lanka-ease.netlify.app,https://*.netlify.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
   ai:
     provider: mock # mock | openai | gemini
     api-key: ${AI_API_KEY:mock-key}
