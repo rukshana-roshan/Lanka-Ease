@@ -48,8 +48,9 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 String host = uri.getHost();
                 int port = uri.getPort() == -1 ? 5432 : uri.getPort();
                 String path = uri.getPath();
+                String query = uri.getQuery();
 
-                String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path + (query != null && !query.isEmpty() ? "?" + query : "");
                 props.put("spring.datasource.url", jdbcUrl);
             } catch (Exception e) {
                 String raw = dbUrl.startsWith("postgres://")
@@ -57,6 +58,8 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                         : "jdbc:postgresql://" + dbUrl.substring("postgresql://".length());
                 props.put("spring.datasource.url", raw);
             }
+        } else if (dbUrl.startsWith("jdbc:postgresql:") || dbUrl.startsWith("jdbc:")) {
+            props.put("spring.datasource.url", dbUrl);
         }
 
         if (!props.isEmpty()) {

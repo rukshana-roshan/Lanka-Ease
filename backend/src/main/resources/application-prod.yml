@@ -3,10 +3,10 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${POSTGRES_DB:lankaease}
+    url: ${DATABASE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:${POSTGRES_DB:railway}}}
     driver-class-name: org.postgresql.Driver
-    username: ${PGUSER:postgres}
-    password: ${PGPASSWORD:postgres}
+    username: ${PGUSER:${POSTGRES_USER:postgres}}
+    password: ${PGPASSWORD:${POSTGRES_PASSWORD:postgres}}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:

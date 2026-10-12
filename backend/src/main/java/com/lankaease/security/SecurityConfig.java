@@ -64,23 +64,59 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Allow CORS preflight requests across all endpoints
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                // Root, health checks, error dispatch, WebSocket, uploads, and API documentation
                 .requestMatchers(
                     "/",
-                    "/api/auth/**",
-                    "/api/services/**",
-                    "/api/providers/**",
-                    "/api/ai/**",
-                    "/ws-lankaease/**",
-                    "/uploads/**",
+                    "/api",
+                    "/health",
+                    "/error",
+                    "/actuator/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
+                    "/v3/api-docs/**",
                     "/h2-console/**",
-                    "/actuator/**"
+                    "/uploads/**",
+                    "/ws-lankaease/**"
                 ).permitAll()
+
+                // Public authentication & registration endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+
+                // Public contact form submission
+                .requestMatchers("/api/contact/**").permitAll()
+
+                // Public service categories browsing (admin CRUD is protected by @PreAuthorize)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services/**").permitAll()
+
+                // Public provider browsing (search, nearby, details; /me and availability require PROVIDER)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/providers").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/providers/nearby").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/providers/{id}").permitAll()
+
+                // Public service request tracking lookup by ID or Code
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/requests/{id}").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/requests/code/**").permitAll()
+
+                // Public provider reviews lookup
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reviews/provider/**").permitAll()
+
+                // Public payment webhooks (PayHere/Stripe) and verification by code
+                .requestMatchers("/api/payments/webhook").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/payments/code/**").permitAll()
+
+                // Public AI assistance endpoints
+                .requestMatchers("/api/ai/**").permitAll()
+
+                // Role-based restricted endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/provider/**").hasAnyRole("PROVIDER", "ADMIN")
                 .requestMatchers("/api/customer/**").hasAnyRole("CUSTOMER", "ADMIN")
+
+                // All other endpoints require valid authentication
                 .anyRequest().authenticated()
             );
 
@@ -101,7 +137,7 @@ public class SecurityConfig {
                 .toList();
         configuration.setAllowedOriginPatterns(origins.isEmpty() ? List.of("*") : origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 

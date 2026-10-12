@@ -1,7 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PwaProvider } from './context/PwaContext';
 import './i18n/i18n';
@@ -14,7 +14,8 @@ import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { OfflineBanner } from './components/OfflineBanner';
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
+import { WelcomeLandingPage } from './pages/WelcomeLandingPage';
+import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CustomerDashboard } from './pages/CustomerDashboard';
@@ -28,7 +29,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { ProviderDashboard } from './pages/ProviderDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 
-// Newly added viewable pages
+// Public Explore Pages
 import { ServicesPage } from './pages/ServicesPage';
 import { ProvidersPage } from './pages/ProvidersPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
@@ -44,6 +45,125 @@ const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </div>
 );
 
+// Route Guard: restricts access to authenticated users only.
+// Unauthenticated users are redirected to /login with the target URL preserved.
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// App Layout that controls navbar/footer visibility based on auth state and path
+const AppContent: React.FC = () => {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const isPublicPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
+  const showNav = !isPublicPage && isAuthenticated;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
+      <OfflineBanner />
+      {showNav && <Navbar />}
+
+      <main className="flex-1 w-full">
+        <Routes>
+          {/* Public Welcome Landing Page */}
+          <Route path="/" element={<WelcomeLandingPage />} />
+
+          {/* Authentication Pages */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Main Website Homepage (Requires Register or Sign In) */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Website Pages (Require Register or Sign In) */}
+          <Route
+            path="/services"
+            element={
+              <ProtectedRoute>
+                <AppContainer><ServicesPage /></AppContainer>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/providers"
+            element={
+              <ProtectedRoute>
+                <AppContainer><ProvidersPage /></AppContainer>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/how-it-works"
+            element={
+              <ProtectedRoute>
+                <AppContainer><HowItWorksPage /></AppContainer>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute>
+                <AppContainer><AboutPage /></AppContainer>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <AppContainer><ContactPage /></AppContainer>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Customer App Routes (Require Register or Sign In) */}
+          <Route path="/app" element={<ProtectedRoute><AppContainer><CustomerDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/explore" element={<ProtectedRoute><AppContainer><ProvidersPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/request" element={<ProtectedRoute><AppContainer><RequestWizard /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/requests" element={<ProtectedRoute><AppContainer><RequestsListPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/requests/:id" element={<ProtectedRoute><AppContainer><RequestTrackingPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/messages" element={<ProtectedRoute><AppContainer><MessagesPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/family" element={<ProtectedRoute><AppContainer><FamilyAssistancePage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/invoices" element={<ProtectedRoute><AppContainer><InvoicesPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/payments" element={<ProtectedRoute><AppContainer><CheckoutPage /></AppContainer></ProtectedRoute>} />
+          <Route path="/app/profile" element={<ProtectedRoute><AppContainer><CustomerDashboard /></AppContainer></ProtectedRoute>} />
+
+          {/* Provider App Routes (Require Register or Sign In) */}
+          <Route path="/provider" element={<ProtectedRoute><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/provider/*" element={<ProtectedRoute><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+
+          {/* Admin App Routes (Require Register or Sign In) */}
+          <Route path="/admin" element={<ProtectedRoute><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/admin/*" element={<ProtectedRoute><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
+
+          {/* Fallback Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+
+      {showNav && <Footer />}
+      {showNav && <PwaInstallBanner />}
+      {showNav && <BottomNav />}
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -51,51 +171,7 @@ export const App: React.FC = () => {
         <AuthProvider>
           <PwaProvider>
             <BrowserRouter>
-              <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
-                <OfflineBanner />
-                <Navbar />
-
-                <main className="flex-1 w-full">
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/services" element={<AppContainer><ServicesPage /></AppContainer>} />
-                    <Route path="/providers" element={<AppContainer><ProvidersPage /></AppContainer>} />
-                    <Route path="/how-it-works" element={<AppContainer><HowItWorksPage /></AppContainer>} />
-                    <Route path="/about" element={<AppContainer><AboutPage /></AppContainer>} />
-                    <Route path="/contact" element={<AppContainer><ContactPage /></AppContainer>} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-
-                    {/* Customer App Routes */}
-                    <Route path="/app" element={<AppContainer><CustomerDashboard /></AppContainer>} />
-                    <Route path="/app/explore" element={<AppContainer><ProvidersPage /></AppContainer>} />
-                    <Route path="/app/request" element={<AppContainer><RequestWizard /></AppContainer>} />
-                    <Route path="/app/requests" element={<AppContainer><RequestsListPage /></AppContainer>} />
-                    <Route path="/app/requests/:id" element={<AppContainer><RequestTrackingPage /></AppContainer>} />
-                    <Route path="/app/messages" element={<AppContainer><MessagesPage /></AppContainer>} />
-                    <Route path="/app/family" element={<AppContainer><FamilyAssistancePage /></AppContainer>} />
-                    <Route path="/app/invoices" element={<AppContainer><InvoicesPage /></AppContainer>} />
-                    <Route path="/app/payments" element={<AppContainer><CheckoutPage /></AppContainer>} />
-                    <Route path="/app/profile" element={<AppContainer><CustomerDashboard /></AppContainer>} />
-
-                    {/* Provider App Routes */}
-                    <Route path="/provider" element={<AppContainer><ProviderDashboard /></AppContainer>} />
-                    <Route path="/provider/*" element={<AppContainer><ProviderDashboard /></AppContainer>} />
-
-                    {/* Admin App Routes */}
-                    <Route path="/admin" element={<AppContainer><AdminDashboard /></AppContainer>} />
-                    <Route path="/admin/*" element={<AppContainer><AdminDashboard /></AppContainer>} />
-
-                    {/* Fallback Catch-all */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </main>
-
-                <Footer />
-                <PwaInstallBanner />
-                <BottomNav />
-              </div>
+              <AppContent />
             </BrowserRouter>
           </PwaProvider>
         </AuthProvider>

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { SafeImage } from './SafeImage';
-import { Camera, X, Upload, Check, User as UserIcon, Link as LinkIcon, Sparkles, Globe, Phone, Mail } from 'lucide-react';
+import { Camera, X, Upload, Check, User as UserIcon, Link as LinkIcon, Sparkles, Globe, Phone, Mail, LogOut } from 'lucide-react';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -19,7 +20,8 @@ const AVATAR_PRESETS = [
 ];
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -258,7 +260,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Save Status & Action Button */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <button
                 type="submit"
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] cursor-pointer"
@@ -274,6 +276,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     <span>Save User Profile</span>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  logout();
+                  navigate('/');
+                }}
+                className="w-full py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer border border-red-200 dark:border-red-900/60"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out of LankaEase</span>
               </button>
             </div>
           </form>

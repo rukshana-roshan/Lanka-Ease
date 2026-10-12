@@ -5,8 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { UserProfileModal } from './UserProfileModal';
 import { SafeImage } from './SafeImage';
+import { Logo } from './Logo';
 import {
-  Wrench,
   Sun,
   Moon,
   User as UserIcon,
@@ -16,12 +16,13 @@ import {
   Menu,
   X,
   ChevronRight,
-  Camera
+  Camera,
+  LogOut
 } from 'lucide-react';
 import type { Role } from '../types';
 
 export const Navbar: React.FC = () => {
-  const { user, isAuthenticated, demoLogin } = useAuth();
+  const { user, isAuthenticated, logout, demoLogin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,28 +46,14 @@ export const Navbar: React.FC = () => {
       <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-800 dark:text-slate-100 border-b border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
-              <Wrench className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">
-                  LankaEase
-                </span>
-              </div>
-              <span className="hidden sm:block text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-wide -mt-0.5">
-                Everyday help, made easier.
-              </span>
-            </div>
-          </Link>
+          <Logo size="md" showTagline={true} />
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-sm font-semibold">
             <Link
-              to="/"
+              to="/home"
               className={`transition-colors ${
-                isActive('/')
+                isActive('/home')
                   ? 'text-emerald-600 dark:text-emerald-400 font-bold border-b-2 border-emerald-600 dark:border-emerald-400 pb-0.5'
                   : 'text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400'
               }`}
@@ -184,6 +171,16 @@ export const Navbar: React.FC = () => {
                   >
                     <Camera className="w-3.5 h-3.5" /> Change Profile Picture
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowRoleMenu(false);
+                      logout();
+                      navigate('/');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-xl flex items-center gap-2"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Sign Out
+                  </button>
                 </div>
               )}
             </div>
@@ -262,7 +259,7 @@ export const Navbar: React.FC = () => {
             )}
 
             <Link
-              to="/"
+              to="/home"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between py-2.5 text-sm font-bold border-b border-slate-100 dark:border-slate-800"
             >
@@ -312,6 +309,18 @@ export const Navbar: React.FC = () => {
 
             <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
               <LanguageSwitcher />
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                    navigate('/');
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 flex items-center gap-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Sign Out
+                </button>
+              )}
             </div>
           </div>
         )}

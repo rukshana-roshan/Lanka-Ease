@@ -52,11 +52,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('lankaease_user');
-    return saved ? JSON.parse(saved) : DEMO_USERS.CUSTOMER; // Default demo customer
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('lankaease_token') || 'demo-jwt-token-2026';
+    return localStorage.getItem('lankaease_token') || null;
   });
 
   useEffect(() => {

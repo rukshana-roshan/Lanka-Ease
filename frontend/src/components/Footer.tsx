@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wrench, Share2, MessageSquare, Globe2, PhoneCall, ShieldCheck, CreditCard, Navigation, Smartphone, ArrowRight, Sparkles } from 'lucide-react';
+import { Share2, MessageSquare, Globe2, PhoneCall, ShieldCheck, CreditCard, Navigation, Smartphone, ArrowRight, Sparkles } from 'lucide-react';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { Logo } from './Logo';
 
 export const Footer: React.FC = () => {
   return (
@@ -45,14 +46,7 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-10">
           {/* Column 1: Brand Info */}
           <div className="col-span-2 space-y-3 pr-4">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 group-hover:scale-105 transition-transform">
-                <Wrench className="w-4 h-4 stroke-[2.5]" />
-              </div>
-              <span className="text-xl font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
-                LankaEase
-              </span>
-            </Link>
+            <Logo size="md" showTagline={true} />
             <p className="text-slate-400 text-[11px] leading-relaxed max-w-xs font-medium">
               Everyday help, made easier. Connecting Sri Lankan households with trusted, verified local professionals.
             </p>
@@ -112,6 +106,7 @@ export const Footer: React.FC = () => {
           <div className="space-y-2.5">
             <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-200">Company</h4>
             <ul className="space-y-1.5 text-[11px]">
+              <li><Link to="/" className="hover:text-emerald-400 transition-colors">Welcome Page</Link></li>
               <li><Link to="/about" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
               <li><Link to="/about" className="hover:text-emerald-400 transition-colors">Careers</Link></li>
               <li><Link to="/about" className="hover:text-emerald-400 transition-colors">Blog</Link></li>
