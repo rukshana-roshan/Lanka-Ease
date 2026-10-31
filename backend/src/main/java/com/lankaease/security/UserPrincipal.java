@@ -12,6 +12,7 @@ import java.util.List;
 
 public class UserPrincipal implements UserDetails {
 
+    private boolean enabled = true;
     private final Long id;
     private final String fullName;
     private final String email;
@@ -37,7 +38,7 @@ public class UserPrincipal implements UserDetails {
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
 
-        return new UserPrincipal(
+        UserPrincipal principal = new UserPrincipal(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
@@ -47,6 +48,8 @@ public class UserPrincipal implements UserDetails {
                 user.getPreferredLanguage(),
                 authorities
         );
+        principal.enabled = !Boolean.FALSE.equals(user.getIsEnabled());
+        return principal;
     }
 
     public Long getId() { return id; }
@@ -75,5 +78,5 @@ public class UserPrincipal implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return enabled; }
 }

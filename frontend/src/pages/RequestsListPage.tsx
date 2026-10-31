@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MOCK_REQUESTS } from '../services/api';
+import { api } from '../services/api';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import { ChevronRight } from 'lucide-react';
 
 export const RequestsListPage: React.FC = () => {
+  const { user, isDemo } = useAuth();
+  const { data: requests = [], error } = useQuery({ queryKey: ['requests', user?.id, isDemo], queryFn: api.getCustomerRequests, retry: false, staleTime: 0 });
   const [tab, setTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED'>('ALL');
 
-  const filtered = MOCK_REQUESTS.filter((req) => {
+  const filtered = requests.filter((req) => {
     if (tab === 'ACTIVE') return req.status === 'ACCEPTED' || req.status === 'ON_THE_WAY' || req.status === 'WORKING';
     if (tab === 'COMPLETED') return req.status === 'COMPLETED' || req.status === 'REVIEWED';
     return true;
   });
 
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page requests-list-page space-y-6 pb-24 pt-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">My Service Requests</h1>
@@ -27,7 +31,9 @@ export const RequestsListPage: React.FC = () => {
         </Link>
       </div>
 
+      {error && <p role="alert" className="p-3 text-xs bg-rose-50 text-rose-800 rounded-xl">{error.message}</p>}
       {/* Filter Tabs */}
+      <div className="request-overview"><div><span>All requests</span><strong>{requests.length.toString().padStart(2, '0')}</strong></div><div><span>In progress</span><strong>{requests.filter(r => ['ACCEPTED', 'ON_THE_WAY', 'WORKING'].includes(r.status)).length.toString().padStart(2, '0')}</strong></div><div><span>Completed</span><strong>{requests.filter(r => ['COMPLETED', 'REVIEWED'].includes(r.status)).length.toString().padStart(2, '0')}</strong></div></div>
       <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
         {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((t) => (
           <button

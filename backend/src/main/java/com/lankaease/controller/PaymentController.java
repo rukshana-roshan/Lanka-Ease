@@ -36,6 +36,6 @@ public class PaymentController {
     @PostMapping("/webhook")
     public ResponseEntity<String> handlePaymentWebhook(@RequestBody String payload) {
         // Secure server-side webhook handler for PayHere/Stripe
-        return ResponseEntity.ok("OK");
+        return ResponseEntity.status(501).body("A verified payment gateway webhook is not configured.");
     }
 }

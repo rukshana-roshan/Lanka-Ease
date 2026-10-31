@@ -1,0 +1,12 @@
+.catalogue-card.catalogue-photo-card{padding:0;overflow:hidden;border-radius:14px;isolation:isolate;background:var(--design-card);border-color:var(--tile-line)}
+.catalogue-photo{position:relative;display:block;width:100%;aspect-ratio:16/10;overflow:hidden;background:var(--tile-tint)}
+.catalogue-photo>img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .45s ease}
+.catalogue-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,var(--tile-glow),transparent 55%);pointer-events:none;mix-blend-mode:soft-light}
+.catalogue-photo-card:hover .catalogue-photo>img{transform:scale(1.05)}
+.catalogue-photo .catalogue-icon{position:absolute;bottom:16px;left:20px;width:43px;height:43px;border-radius:12px;margin:0;background:var(--tile-tint);color:var(--tile-ink);z-index:1;box-shadow:0 2px 12px #243c3215}
+.catalogue-photo>small{position:absolute;top:14px;right:15px;background:var(--tile-tint);color:var(--tile-ink);padding:6px 10px;border-radius:20px;font-size:10px;z-index:1}
+.catalogue-copy{padding:23px;display:flex;flex-direction:column;flex:1;background:linear-gradient(130deg,color-mix(in srgb,var(--tile-tint) 44%,var(--design-card)),var(--design-card))}
+.catalogue-photo-card .catalogue-copy h3{margin-bottom:10px;font-size:20px}.catalogue-photo-card .catalogue-copy p{margin-bottom:20px;line-height:1.8;min-height:42px}.catalogue-copy .catalogue-card-link{color:var(--tile-ink);border-color:var(--tile-line)}
+.dark .catalogue-copy{background:linear-gradient(130deg,color-mix(in srgb,var(--tile-ink) 20%,var(--design-card)),var(--design-card))}.dark .catalogue-copy .catalogue-card-link{color:var(--tile-tint);border-color:var(--design-line)}.dark .catalogue-card.catalogue-photo-card{border-color:var(--design-line)}
+@media(max-width:700px){.catalogue-card.catalogue-photo-card{padding:0}.catalogue-photo{aspect-ratio:4/3}.catalogue-photo .catalogue-icon{left:12px;bottom:11px;width:32px;height:32px;border-radius:9px}.catalogue-photo .catalogue-icon svg{width:19px;height:19px}.catalogue-photo>small{right:10px;top:10px;font-size:8px;padding:4px 7px}.catalogue-copy{padding:17px 14px}.catalogue-photo-card .catalogue-copy h3{font-size:16px}.catalogue-photo-card .catalogue-copy p{font-size:11px;min-height:58px}.catalogue-copy .catalogue-card-link{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.catalogue-photo-card:hover .catalogue-photo>img{transform:none}}

@@ -4,24 +4,15 @@
   "description": "Sri Lanka's trusted smart local services platform. Request services, track professionals, and manage household help.",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "start_url": "/",
-  "background_color": "#0F766E",
-  "theme_color": "#0F766E",
+  "background_color": "#f9f8f3",
+  "theme_color": "#244c3c",
   "display": "standalone",
   "orientation": "portrait"
 }

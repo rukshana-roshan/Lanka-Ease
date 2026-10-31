@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api, MOCK_CATEGORIES, MOCK_FAMILY_MEMBERS } from '../services/api';
+import { api, MOCK_CATEGORIES } from '../services/api';
 import {
   Wrench,
   Sparkle,
@@ -11,21 +11,25 @@ import {
   Save,
   X
 } from 'lucide-react';
+import type { FamilyMember } from '../types';
+import { localToday } from '../services/session';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const RequestWizard: React.FC = () => {
   const navigate = useNavigate();
-  const locationState = useLocation().state || {};
+  const location = useLocation();
+  const locationState = location.state || {};
+  const parameters = new URLSearchParams(location.search);
 
   const [step, setStep] = useState(1);
   const [problemDescription, setProblemDescription] = useState(locationState.problemDescription || '');
   const [categoryId, setCategoryId] = useState<number | null>(locationState.categoryId || null);
-  const [familyMemberId, setFamilyMemberId] = useState<number | null>(null);
-  const [providerId] = useState<number | null>(locationState.providerId || null);
-  const [address, setAddress] = useState('No. 45, Galle Road, Colombo 03, Sri Lanka');
+  const [familyMemberId, setFamilyMemberId] = useState<number | null>(locationState.familyMemberId || null);
+  const [providerId] = useState<number | null>(locationState.providerId || Number(parameters.get('providerId')) || null);
+  const [address, setAddress] = useState(locationState.address || '');
   const [latitude, setLatitude] = useState(6.9147);
   const [longitude, setLongitude] = useState(79.8510);
-  const [preferredDate, setPreferredDate] = useState('2026-09-26');
+  const [preferredDate, setPreferredDate] = useState(localToday);
   const [preferredTime, setPreferredTime] = useState('10:00 - 12:00');
   const [urgency, setUrgency] = useState<'NORMAL' | 'TODAY' | 'URGENT'>('NORMAL');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
@@ -33,10 +37,20 @@ export const RequestWizard: React.FC = () => {
   const [isClassifying, setIsClassifying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [error, setError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api.getFamilyMembers().then(rows => { if (!cancelled) setFamilyMembers(rows); }).catch(() => {});
+    if (providerId) api.getProviderById(providerId).then(provider => { if (!cancelled && provider.categories[0]) setCategoryId(provider.categories[0].id); }).catch(e => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
+  }, [providerId]);
+
   // Trigger AI Classification on step 1 -> step 2
   const handleNextStep1 = async () => {
     if (!problemDescription.trim()) return;
-    setIsClassifying(true);
+    setIsClassifying(true); setError('');
     try {
       const res = await api.classifyAiProblem(problemDescription);
       setAiResult(res);
@@ -44,19 +58,19 @@ export const RequestWizard: React.FC = () => {
         setCategoryId(res.suggestedCategoryId);
       }
     } catch (e) {
-      console.error(e);
+      setError(e instanceof Error ? e.message : 'Could not classify the task. Choose a category manually.');
     } finally {
       setIsClassifying(false);
       setStep(2);
     }
   };
 
-  const handleMediaAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      setMediaUrls([...mediaUrls, url]);
-    }
+  const handleMediaAdd = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; if (!file) return;
+    setIsUploading(true); setError('');
+    try { const url = await api.uploadMedia(file); setMediaUrls(previous => [...previous, url]); }
+    catch (error) { setError(error instanceof Error ? error.message : 'The attachment could not be saved.'); }
+    finally { setIsUploading(false); event.target.value = ''; }
   };
 
   const handleRemoveMedia = (index: number) => {
@@ -65,7 +79,7 @@ export const RequestWizard: React.FC = () => {
 
   const handleSelectFamilyMember = (fmId: number) => {
     setFamilyMemberId(fmId);
-    const member = MOCK_FAMILY_MEMBERS.find((m) => m.id === fmId);
+    const member = familyMembers.find((m) => m.id === fmId);
     if (member) {
       setAddress(member.address);
       if (member.latitude) setLatitude(member.latitude);
@@ -74,13 +88,15 @@ export const RequestWizard: React.FC = () => {
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
-    setIsSubmitting(true);
+    if (!isDraft && (!address.trim() || !preferredDate || preferredDate < localToday())) { setError('Enter an address and choose today or a future date.'); return; }
+    if (isUploading) { setError('Wait for the attachment to finish uploading.'); return; }
+    setIsSubmitting(true); setError('');
     try {
       const payload = {
         problemDescription,
         categoryId: categoryId || 1,
-        familyMemberId,
-        providerId,
+        familyMemberId: familyMemberId || undefined,
+        providerId: providerId || undefined,
         address,
         latitude,
         longitude,
@@ -95,15 +111,17 @@ export const RequestWizard: React.FC = () => {
       const req = await api.createServiceRequest(payload);
       navigate(`/app/requests/${req.id}`);
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'The request could not be saved. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-24 pt-4">
+    <div className="designed-page request-wizard max-w-2xl mx-auto space-y-6 pb-24 pt-4">
+      {error && <p role="alert" className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs">{error}</p>}
       {/* Step Progress Indicator (1 - 8) */}
+      <header className="request-editor-heading"><span className="design-eyebrow">ONE LESS THING ON YOUR LIST</span><h1>Let's get it sorted.</h1><p>A few details will help us find the right kind of help.</p></header>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
         <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">
           <span>STEP {step} OF 8</span>
@@ -249,7 +267,7 @@ export const RequestWizard: React.FC = () => {
 
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setStep(3)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
-                <button onClick={() => setStep(5)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Location</button>
+                <button disabled={isUploading} onClick={() => setStep(5)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Location</button>
               </div>
             </motion.div>
           )}
@@ -266,12 +284,12 @@ export const RequestWizard: React.FC = () => {
                 </span>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => { setFamilyMemberId(null); setAddress('No. 45, Galle Road, Colombo 03'); }}
+                    onClick={() => { setFamilyMemberId(null); setAddress(''); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${!familyMemberId ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'}`}
                   >
                     My Home
                   </button>
-                  {MOCK_FAMILY_MEMBERS.map((fm) => (
+                  {familyMembers.map((fm) => (
                     <button
                       key={fm.id}
                       onClick={() => handleSelectFamilyMember(fm.id)}
@@ -295,7 +313,7 @@ export const RequestWizard: React.FC = () => {
 
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setStep(4)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
-                <button onClick={() => setStep(6)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Date & Time</button>
+                <button disabled={!address.trim()} onClick={() => setStep(6)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Date & Time</button>
               </div>
             </motion.div>
           )}
@@ -310,6 +328,7 @@ export const RequestWizard: React.FC = () => {
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Preferred Date</label>
                   <input
                     type="date"
+                    min={localToday()}
                     value={preferredDate}
                     onChange={(e) => setPreferredDate(e.target.value)}
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white"
@@ -331,8 +350,8 @@ export const RequestWizard: React.FC = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setStep(5)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
-                <button onClick={() => setStep(7)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Urgency</button>
+                <button disabled={isUploading} onClick={() => setStep(5)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
+                <button disabled={!preferredDate || preferredDate < localToday()} onClick={() => setStep(7)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Urgency</button>
               </div>
             </motion.div>
           )}
@@ -367,7 +386,7 @@ export const RequestWizard: React.FC = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setStep(6)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
+                <button disabled={!address.trim()} onClick={() => setStep(6)} className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold">Back</button>
                 <button onClick={() => setStep(8)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow">Next: Review & Submit</button>
               </div>
             </motion.div>
@@ -389,14 +408,14 @@ export const RequestWizard: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => handleSubmit(true)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploading}
                   className="px-4 py-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold flex items-center gap-1"
                 >
                   <Save className="w-4 h-4" /> Save Draft
                 </button>
                 <button
                   onClick={() => handleSubmit(false)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploading}
                   className="flex-1 py-3.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Submit Service Request

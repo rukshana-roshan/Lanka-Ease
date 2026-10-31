@@ -26,3 +26,6 @@ logs/
 # Environment & IDE
 .env
 .env.local
+site-preview/
+site-preview-deploy.tar.gz
+.design-qa/

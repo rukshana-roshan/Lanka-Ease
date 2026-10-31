@@ -29,6 +29,7 @@ public class InvoiceController {
     public ResponseEntity<InvoiceResponseDto> getInvoiceById(@PathVariable Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
+        com.lankaease.security.ResourceAccess.requireRequest(invoice.getRequest());
         return ResponseEntity.ok(mapToDto(invoice));
     }
 
@@ -36,6 +37,7 @@ public class InvoiceController {
     public ResponseEntity<InvoiceResponseDto> getInvoiceByRequestId(@PathVariable Long requestId) {
         Invoice invoice = invoiceRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice for request", "requestId", requestId));
+        com.lankaease.security.ResourceAccess.requireRequest(invoice.getRequest());
         return ResponseEntity.ok(mapToDto(invoice));
     }
 
@@ -44,6 +46,7 @@ public class InvoiceController {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", id));
 
+        com.lankaease.security.ResourceAccess.requireRequest(invoice.getRequest());
         byte[] pdfContents = pdfInvoiceService.generateInvoicePdf(invoice);
 
         return ResponseEntity.ok()

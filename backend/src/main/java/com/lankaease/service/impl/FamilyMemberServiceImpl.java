@@ -57,9 +57,8 @@ public class FamilyMemberServiceImpl implements FamilyMemberService {
         FamilyMember member = familyMemberRepository.findById(familyMemberId)
                 .orElseThrow(() -> new ResourceNotFoundException("FamilyMember", "id", familyMemberId));
 
-        if (member.getCustomer().getId().equals(customerId)) {
-            familyMemberRepository.delete(member);
-        }
+        if (!member.getCustomer().getId().equals(customerId)) throw new org.springframework.security.access.AccessDeniedException("This family member belongs to another account.");
+        familyMemberRepository.delete(member);
     }
 
     private FamilyMemberResponseDto mapToDto(FamilyMember fm) {

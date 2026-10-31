@@ -18,6 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.time.Year;
+import com.lankaease.security.ResourceAccess;
+import com.lankaease.entity.enums.Role;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class ServiceRequestServiceImpl implements ServiceRequestService {
@@ -67,12 +73,15 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                     .orElseThrow(() -> new ResourceNotFoundException("FamilyMember", "id", dto.familyMemberId()));
         }
 
+        if (familyMember != null && !Objects.equals(familyMember.getCustomer().getId(), customerId)) {
+            throw new AccessDeniedException("The selected family member belongs to another account.");
+        }
         ProviderProfile provider = null;
         if (dto.providerId() != null) {
-            provider = providerProfileRepository.findById(dto.providerId()).orElse(null);
+            provider = providerProfileRepository.findById(dto.providerId()).orElseThrow(() -> new ResourceNotFoundException("Provider", "id", dto.providerId()));
         }
 
-        String requestCode = "REQ-2026-" + String.format("%04d", (int)(Math.random() * 9000 + 1000));
+        String requestCode = "REQ-" + Year.now().getValue() + "-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
 
         ServiceRequest request = new ServiceRequest();
         request.setRequestCode(requestCode);
@@ -88,7 +97,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         request.setPreferredDate(dto.preferredDate());
         request.setPreferredTime(dto.preferredTime());
         request.setUrgency(dto.urgency() != null ? dto.urgency() : Urgency.NORMAL);
-        request.setStatus(dto.isDraft() != null && dto.isDraft() ? RequestStatus.DRAFT : (provider != null ? RequestStatus.ACCEPTED : RequestStatus.CREATED));
+        request.setStatus(dto.isDraft() != null && dto.isDraft() ? RequestStatus.DRAFT : RequestStatus.CREATED);
         request.setEstimatedPrice(provider != null ? provider.getPriceMin() : new BigDecimal("2500.00"));
 
         ServiceRequest saved = requestRepository.save(request);
@@ -115,6 +124,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     public ServiceRequestResponseDto getRequestById(Long id) {
         ServiceRequest request = requestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceRequest", "id", id));
+        ResourceAccess.requireRequest(request);
         return mapToDto(request);
     }
 
@@ -122,6 +132,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     public ServiceRequestResponseDto getRequestByCode(String requestCode) {
         ServiceRequest request = requestRepository.findByRequestCode(requestCode)
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceRequest", "requestCode", requestCode));
+        ResourceAccess.requireRequest(request);
         return mapToDto(request);
     }
 
@@ -143,7 +154,20 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceRequest", "id", requestId));
 
-        User currentUser = userRepository.findById(currentUserId).orElse(null);
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+        ResourceAccess.requireRequest(request);
+        if (currentUser.getRole() == Role.CUSTOMER && (dto.newStatus() != RequestStatus.CANCELLED
+                || dto.finalPrice() != null || dto.labourFee() != null || dto.partsFee() != null)) {
+            throw new AccessDeniedException("Customers can cancel their requests, but cannot set work status or charges.");
+        }
+        if (dto.newStatus() == null || request.getStatus() == RequestStatus.COMPLETED
+                || request.getStatus() == RequestStatus.REVIEWED || request.getStatus() == RequestStatus.CANCELLED) {
+            throw new BadRequestException("This request cannot be changed to that status.");
+        }
+        if (currentUser.getRole() != Role.ADMIN && !isValidTransition(request.getStatus(), dto.newStatus())) {
+            throw new BadRequestException("The requested status transition is not valid.");
+        }
         RequestStatus oldStatus = request.getStatus();
         request.setStatus(dto.newStatus());
 
@@ -183,6 +207,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         return requestRepository.findWithFilters(status, categoryId, pageable).map(this::mapToDto);
     }
 
+    private boolean isValidTransition(RequestStatus from, RequestStatus to) {
+        if (to == RequestStatus.CANCELLED) return from != RequestStatus.COMPLETED && from != RequestStatus.REVIEWED;
+        return switch (from) {
+            case DRAFT -> to == RequestStatus.CREATED;
+            case CREATED, PROVIDER_FOUND -> to == RequestStatus.ACCEPTED;
+            case ACCEPTED -> to == RequestStatus.ON_THE_WAY;
+            case ON_THE_WAY -> to == RequestStatus.ARRIVED;
+            case ARRIVED -> to == RequestStatus.WORKING;
+            case WORKING -> to == RequestStatus.COMPLETED;
+            default -> false;
+        };
+    }
+
     private void createInvoiceForRequest(ServiceRequest request, BigDecimal labour, BigDecimal parts) {
         if (invoiceRepository.findByRequestId(request.getId()).isPresent()) return;
 
@@ -191,7 +228,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         BigDecimal serviceFee = new BigDecimal("200.00");
         BigDecimal total = labourFee.add(partsFee).add(serviceFee);
 
-        String invoiceNum = "INV-2026-" + String.format("%04d", (int)(Math.random() * 9000 + 1000));
+        String invoiceNum = "INV-" + Year.now().getValue() + "-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
 
         Invoice invoice = new Invoice();
         invoice.setInvoiceNumber(invoiceNum);

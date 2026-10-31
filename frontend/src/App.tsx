@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -11,7 +11,9 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { BottomNav } from './components/BottomNav';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
+import type { Role } from './types';
 import { OfflineBanner } from './components/OfflineBanner';
+import { PageFrame } from './components/PageFrame';
 
 // Pages
 import { WelcomeLandingPage } from './pages/WelcomeLandingPage';
@@ -40,15 +42,13 @@ const queryClient = new QueryClient();
 
 // Helper Wrapper for inner app pages to keep max-w-7xl layout consistency
 const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    {children}
-  </div>
+  <PageFrame>{children}</PageFrame>
 );
 
 // Route Guard: restricts access to authenticated users only.
 // Unauthenticated users are redirected to /login with the target URL preserved.
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: Role[] }> = ({ children, roles }) => {
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -56,20 +56,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
   }
 
+  if (roles && user && !roles.includes(user.role)) return <Navigate to={user.role === 'ADMIN' ? '/admin' : user.role === 'PROVIDER' ? '/provider' : '/app'} replace />;
   return <>{children}</>;
 };
 
 // App Layout that controls navbar/footer visibility based on auth state and path
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isDemo } = useAuth();
   const isPublicPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
   const showNav = !isPublicPage && isAuthenticated;
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const page = location.pathname.split('/').filter(Boolean).pop() || 'Home';
+    document.title = `${page === 'app' ? 'Your workspace' : page.replace(/-/g, ' ').replace(/^./, c => c.toUpperCase())} · LankaEase`;
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
+    <div className="lanka-app min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
       <OfflineBanner />
       {showNav && <Navbar />}
+      {showNav && isDemo && <div className="demo-workspace-notice" role="status">Demo workspace ? Sample records are stored on this browser. No real bookings or payments are sent.</div>}
 
       <main className="flex-1 w-full">
         <Routes>
@@ -145,12 +152,12 @@ const AppContent: React.FC = () => {
           <Route path="/app/profile" element={<ProtectedRoute><AppContainer><CustomerDashboard /></AppContainer></ProtectedRoute>} />
 
           {/* Provider App Routes (Require Register or Sign In) */}
-          <Route path="/provider" element={<ProtectedRoute><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
-          <Route path="/provider/*" element={<ProtectedRoute><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/provider" element={<ProtectedRoute roles={['PROVIDER', 'ADMIN']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/provider/*" element={<ProtectedRoute roles={['PROVIDER', 'ADMIN']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
 
           {/* Admin App Routes (Require Register or Sign In) */}
-          <Route path="/admin" element={<ProtectedRoute><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
-          <Route path="/admin/*" element={<ProtectedRoute><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/admin/*" element={<ProtectedRoute roles={['ADMIN']}><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />
 
           {/* Fallback Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

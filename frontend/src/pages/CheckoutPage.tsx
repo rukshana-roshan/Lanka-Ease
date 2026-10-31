@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, ShieldCheck, CheckCircle2, Building, DollarSign, Wallet } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useAuth } from '../context/AuthContext';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isDemo } = useAuth();
   const [method, setMethod] = useState<'CARD' | 'PAYHERE' | 'BANK_TRANSFER' | 'CASH'>('CARD');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handlePay = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isDemo) return;
     setIsProcessing(true);
 
     setTimeout(() => {
@@ -21,12 +24,12 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 pb-24 pt-4">
+    <div className="designed-page checkout-page max-w-xl mx-auto space-y-6 pb-24 pt-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <CreditCard className="w-6 h-6 text-brand-600" /> Secure Checkout
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">LKR Payment Processing</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Payment preview ? no real transaction is processed</p>
       </div>
 
       {isSuccess ? (
@@ -34,9 +37,9 @@ export const CheckoutPage: React.FC = () => {
           <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">Payment Successful!</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">Demo payment preview complete</h2>
           <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
-            Payment of <strong>Rs. 2,500</strong> via {method} has been received. Transaction reference: <strong>TXN-9847294812</strong>.
+            This simulated payment uses {method}. No money was charged and no real invoice was marked paid.
           </p>
           <button
             onClick={() => navigate('/app/requests')}
@@ -89,10 +92,10 @@ export const CheckoutPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isProcessing}
+              disabled={isProcessing || !isDemo}
               className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition-all mt-4"
             >
-              {isProcessing ? 'Processing Payment...' : 'Pay Rs. 2,500'}
+              {!isDemo ? 'Live payments are not configured' : isProcessing ? 'Running demo...' : 'Preview a demo payment'}
             </button>
           </form>
         </div>

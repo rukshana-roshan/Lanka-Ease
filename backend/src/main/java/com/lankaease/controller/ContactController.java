@@ -1,28 +1,24 @@
 package com.lankaease.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.lankaease.entity.ContactMessage;
+import com.lankaease.repository.ContactMessageRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.LinkedHashMap;
+import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contact")
 public class ContactController {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContactController.class);
-
+    private final ContactMessageRepository repository;
+    public ContactController(ContactMessageRepository repository) { this.repository = repository; }
+    public record Submission(@NotBlank @Size(max=100) String name,
+            @NotBlank @Email @Size(max=150) String email, @Size(max=30) String phone,
+            @Size(max=150) String subject, @NotBlank @Size(max=10000) String message) {}
     @PostMapping
-    public ResponseEntity<Map<String, Object>> submitContactForm(@RequestBody(required = false) Map<String, Object> contactPayload) {
-        logger.info("Received public contact message submission: {}", contactPayload);
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("status", "SUCCESS");
-        response.put("message", "Thank you for contacting LankaEase. Our support team will get back to you shortly.");
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, Object>> submitContactForm(@Valid @RequestBody Submission body) {
+        var message = repository.save(new ContactMessage(body.name(), body.email(), body.phone(), body.subject(), body.message()));
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "id", message.getId(), "message", "Your message has been received."));
     }
 }

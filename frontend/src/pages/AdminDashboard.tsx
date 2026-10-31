@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext';
 import React, { useState } from 'react';
 import {
   ShieldCheck,
@@ -35,6 +36,7 @@ const INITIAL_USERS: User[] = [
 ];
 
 export const AdminDashboard: React.FC = () => {
+  const { isDemo } = useAuth();
   // Navigation Active Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'providers' | 'categories' | 'requests' | 'settings'>('overview');
 
@@ -209,7 +211,7 @@ export const AdminDashboard: React.FC = () => {
       isAvailable: true,
       currentLatitude: 6.9147,
       currentLongitude: 79.8510,
-      profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      profileImage: '/images/avatars/person-1.svg',
       phone: newProviderForm.phone || '+94778889900',
       email: newProviderForm.email || 'provider@lankaease.lk',
       categories: [categoryObj],
@@ -334,8 +336,9 @@ export const AdminDashboard: React.FC = () => {
     requestStatusFilter === 'ALL' || r.status === requestStatusFilter
   );
 
+  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Workspace integration pending</h1><p className="mt-3 text-sm">This management interface currently uses demo records. Live management controls are unavailable until the backend integration is completed.</p></div>;
   return (
-    <div className="space-y-6 pb-24 pt-4 text-slate-800 dark:text-slate-100 max-w-7xl mx-auto px-2 sm:px-4">
+    <div className="designed-page admin-dashboard space-y-6 pb-24 pt-4 text-slate-800 dark:text-slate-100 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Toast Notification Container */}
       {toast && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl bg-slate-900 border border-emerald-500/40 text-white animate-bounce-short">

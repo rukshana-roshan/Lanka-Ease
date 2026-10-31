@@ -1,6 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
+import { PageIntro } from '../components/PageIntro';
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../services/api';
+import { MOCK_CATEGORIES, api } from '../services/api';
 import { Search, ShieldCheck, Star, Eye, MessageSquare, Calendar } from 'lucide-react';
 import { SafeImage } from '../components/SafeImage';
 import { ProviderDetailModal } from '../components/ProviderDetailModal';
@@ -8,16 +11,20 @@ import type { Provider } from '../types';
 
 export const ProvidersPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const initialCatId = searchParams.get('categoryId');
+  const { user, isDemo } = useAuth();
+  const { data: providers = [], error: loadError } = useQuery({ queryKey: ['providers', user?.id, isDemo], queryFn: () => api.getProviders(), retry: false });
+  const initialCatId = searchParams.get('categoryId') || MOCK_CATEGORIES.find(c => c.slug === searchParams.get('category'))?.id;
+  const [selectedCity, setSelectedCity] = useState(searchParams.get('city') || '');
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCatId, setSelectedCatId] = useState<number | null>(initialCatId ? Number(initialCatId) : null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [availableOnly, setAvailableOnly] = useState(false);
   const [selectedProviderModal, setSelectedProviderModal] = useState<Provider | null>(null);
 
   const filteredProviders = useMemo(() => {
-    return MOCK_PROVIDERS.filter((p) => {
+    return providers.filter((p) => {
+      if (selectedCity && !p.serviceCities.some(c => c.toLowerCase() === selectedCity.toLowerCase())) return false;
       if (selectedCatId && !p.categories.some((c) => c.id === selectedCatId)) return false;
       if (verifiedOnly && !p.isVerified) return false;
       if (availableOnly && !p.isAvailable) return false;
@@ -30,28 +37,14 @@ export const ProvidersPage: React.FC = () => {
       }
       return true;
     });
-  }, [selectedCatId, verifiedOnly, availableOnly, searchTerm]);
+  }, [selectedCatId, verifiedOnly, availableOnly, searchTerm, selectedCity, providers]);
 
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page providers-page space-y-6 pb-24 pt-4">
       {/* Page Header Banner */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">
-            PRO DIRECTORY
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-black text-white mt-1">Verified Local Professionals</h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Showing {filteredProviders.length} active service providers. Click any profile to view full credentials, contact details & rates.
-          </p>
-        </div>
+      <PageIntro eyebrow="GOOD HELP, CLOSE TO HOME" title="Find your kind of professional." description="Explore local skills, compare profiles, and find a helping hand for your next household task." image="/images/ease-repair-v3.png" />
 
-        <div className="flex items-center gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs font-bold text-slate-300">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span>Every Category has &gt;10 Verified Experts</span>
-        </div>
-      </div>
-
+      {loadError && <p role="alert" className="p-3 text-xs bg-rose-50 text-rose-800 rounded-xl">{loadError.message}</p>}
       {/* Global Search & Category Filters */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm space-y-4">
         <div className="relative">
@@ -73,10 +66,10 @@ export const ProvidersPage: React.FC = () => {
               selectedCatId === null ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
             }`}
           >
-            All Categories ({MOCK_PROVIDERS.length})
+            All Categories ({providers.length})
           </button>
           {MOCK_CATEGORIES.map((cat) => {
-            const count = MOCK_PROVIDERS.filter((p) => p.categories.some((c) => c.id === cat.id)).length;
+            const count = providers.filter((p) => p.categories.some((c) => c.id === cat.id)).length;
             return (
               <button
                 key={cat.id}
@@ -92,7 +85,8 @@ export const ProvidersPage: React.FC = () => {
         </div>
 
         {/* Checkbox Toggles */}
-        <div className="flex items-center gap-5 text-xs font-bold text-slate-700 dark:text-slate-300 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-5 text-xs font-bold text-slate-700 dark:text-slate-300 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <label className="provider-city-filter">Location <select aria-label="Filter professionals by location" value={selectedCity} onChange={e => setSelectedCity(e.target.value)}><option value="">All locations</option>{['Colombo', 'Kandy', 'Galle', 'Gampaha', 'Negombo', 'Matara', 'Kurunegala', 'Jaffna', 'Kalutara'].map(city => <option key={city}>{city}</option>)}</select></label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -120,7 +114,7 @@ export const ProvidersPage: React.FC = () => {
           <p className="text-base font-bold text-slate-800 dark:text-slate-200">No professionals found</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Try changing your filters or searching another keyword.</p>
           <button
-            onClick={() => { setSelectedCatId(null); setSearchTerm(''); setVerifiedOnly(false); setAvailableOnly(false); }}
+            onClick={() => { setSelectedCatId(null); setSearchTerm(''); setSelectedCity(''); setVerifiedOnly(false); setAvailableOnly(false); }}
             className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl"
           >
             Clear Filters

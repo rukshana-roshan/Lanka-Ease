@@ -25,12 +25,10 @@ export const PwaProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('offline', handleOffline);
 
     // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch((err) => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-      });
+    const registerWorker = () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); };
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      if (document.readyState === 'complete') registerWorker();
+      else window.addEventListener('load', registerWorker, { once: true });
     }
 
     // PWA BeforeInstallPrompt Event
@@ -48,6 +46,7 @@ export const PwaProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     return () => {
+      window.removeEventListener('load', registerWorker);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);

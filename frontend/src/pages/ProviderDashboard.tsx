@@ -13,14 +13,14 @@ import {
 } from 'lucide-react';
 
 export const ProviderDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [isAvailable, setIsAvailable] = useState(true);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const [providerInfo, setProviderInfo] = useState({
     businessName: 'Kasun Electrical Solutions',
     profession: 'Certified Electrician & Technician',
-    profileImage: user?.profileImage || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+    profileImage: user?.profileImage || '/images/avatars/person-1.svg',
     ratingAvg: 4.9,
     jobsCompletedCount: 124,
     serviceCities: 'Colombo, Dehiwala, Nugegoda',
@@ -33,8 +33,9 @@ export const ProviderDashboard: React.FC = () => {
     }));
   };
 
+  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Workspace integration pending</h1><p className="mt-3 text-sm">This management interface currently uses demo records. Live management controls are unavailable until the backend integration is completed.</p></div>;
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page provider-dashboard space-y-6 pb-24 pt-4">
       {/* Header & Provider Picture Section */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/80 p-6 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -48,7 +49,7 @@ export const ProviderDashboard: React.FC = () => {
           >
             <SafeImage
               src={providerInfo.profileImage}
-              fallbackSrc="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300"
+              fallbackSrc="/images/avatars/person-1.svg"
               alt={providerInfo.businessName}
               className="w-18 h-18 sm:w-20 sm:h-20 rounded-full object-cover border-3 border-amber-500 shadow-xl group-hover:scale-105 transition-transform"
             />

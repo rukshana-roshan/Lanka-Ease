@@ -9,7 +9,7 @@ const TESTIMONIALS = [
     location: 'Colombo 03',
     rating: 5.0,
     quote: 'Finding an electrician used to take hours. LankaEase matched me with Kasun in 10 minutes, and I tracked his arrival live!',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-1.svg',
   },
   {
     id: 2,
@@ -17,7 +17,7 @@ const TESTIMONIALS = [
     location: 'Kandy',
     rating: 5.0,
     quote: 'I ordered a water tank repair for my elderly parents in Kandy while working in Colombo. Fantastic family assistance feature!',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-5.svg',
   },
   {
     id: 3,
@@ -25,7 +25,7 @@ const TESTIMONIALS = [
     location: 'Galle',
     rating: 4.9,
     quote: 'The AC repair technician was extremely professional. Itemized PDF invoice and digital payment made it completely hassle-free.',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-4.svg',
   },
 ];
 

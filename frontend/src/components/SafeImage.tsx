@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ImageOff } from 'lucide-react';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -6,22 +6,19 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   alt: string;
 }
 
-export const SafeImage: React.FC<SafeImageProps> = ({
+const SafeImageContent: React.FC<SafeImageProps> = ({
   src,
-  fallbackSrc = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=800',
+  fallbackSrc = '/images/ease-home-v2.png',
   alt,
   className = '',
   ...props
 }) => {
   const [imgSrc, setImgSrc] = useState<string>(src || fallbackSrc);
   const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    setImgSrc(src || fallbackSrc);
-    setHasError(false);
-  }, [src, fallbackSrc]);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
   const handleError = () => {
+    if (hasError || imgSrc === fallbackSrc) { setFallbackFailed(true); return; }
     if (!hasError) {
       setHasError(true);
       if (fallbackSrc && imgSrc !== fallbackSrc) {
@@ -30,9 +27,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
   };
 
-  if (hasError && imgSrc === fallbackSrc) {
+  if (fallbackFailed) {
     return (
-      <div className={`flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-400 ${className}`}>
+      <div role="img" aria-label={alt} className={`flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-400 ${className}`}>
         <ImageOff className="w-6 h-6" />
       </div>
     );
@@ -48,3 +45,5 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     />
   );
 };
+
+export const SafeImage: React.FC<SafeImageProps> = (props) => <SafeImageContent key={`${props.src || ''}|${props.fallbackSrc || ''}`} {...props} />;

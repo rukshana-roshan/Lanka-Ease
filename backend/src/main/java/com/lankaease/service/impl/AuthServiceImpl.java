@@ -165,13 +165,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtAuthResponse refreshToken(String refreshToken) {
-        if (!tokenProvider.validateToken(refreshToken)) {
+        if (!tokenProvider.validateRefreshToken(refreshToken)) {
             throw new UnauthorizedException("Invalid or expired refresh token");
         }
         Long userId = tokenProvider.getUserIdFromJWT(refreshToken);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
+        if (Boolean.FALSE.equals(user.getIsEnabled())) throw new UnauthorizedException("Account is disabled");
         UserPrincipal principal = UserPrincipal.create(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         String newAccessToken = tokenProvider.generateToken(auth);

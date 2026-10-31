@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { demoStorageKey } from '../services/session';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_PROVIDERS } from '../services/api';
-import { Send, Paperclip, CheckCheck } from 'lucide-react';
+import { Send, ArrowLeft, CheckCheck, MessageCircle } from 'lucide-react';
 
 interface ChatMessage {
   id: number;
@@ -12,14 +14,24 @@ interface ChatMessage {
 }
 
 export const MessagesPage: React.FC = () => {
-  const { user } = useAuth();
-  const [selectedProvider, setSelectedProvider] = useState(MOCK_PROVIDERS[3]); // Sunil Rathnayake
+  const { user, isDemo } = useAuth();
+  const [parameters] = useSearchParams();
+  const initialProfessional = MOCK_PROVIDERS.find(p => p.userId === Number(parameters.get('conversationWith'))) || MOCK_PROVIDERS[3];
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const [selectedProvider, setSelectedProvider] = useState(initialProfessional); // Sunil Rathnayake
   const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 1, senderId: 2, text: 'Ayubowan Sunil, are you on your way to Colombo 03?', timestamp: '10:15 AM', isRead: true },
-    { id: 2, senderId: 6, text: 'Ayubowan Kamal! Yes, I have left Kollupitiya and ETA is around 20 minutes.', timestamp: '10:18 AM', isRead: true },
-    { id: 3, senderId: 2, text: 'Great! The parking space in front of the house is clear.', timestamp: '10:20 AM', isRead: true },
-  ]);
+  const [mobileChat, setMobileChat] = useState(false);
+  const [threads, setThreads] = useState<Record<number, ChatMessage[]>>(() => {
+    if (!isDemo) return {};
+    try { return JSON.parse(localStorage.getItem(demoStorageKey('messages')) || '{}'); } catch { return {}; }
+  });
+  const messages = threads[selectedProvider.id] || [];
+  const setMessages = (update: ChatMessage[] | ((previous: ChatMessage[]) => ChatMessage[])) => {
+    const providerId = selectedProvider.id;
+    setThreads(previous => ({ ...previous, [providerId]: typeof update === 'function' ? update(previous[providerId] || []) : update }));
+  };
+  useEffect(() => { if (isDemo) localStorage.setItem(demoStorageKey('messages'), JSON.stringify(threads)); }, [threads, isDemo]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +45,11 @@ export const MessagesPage: React.FC = () => {
       isRead: false,
     };
 
-    setMessages([...messages, newMsg]);
+    setMessages(previous => [...previous, newMsg]);
     setInputText('');
 
     // Simulate auto provider reply
-    setTimeout(() => {
+    timers.current.push(setTimeout(() => {
       const replyMsg: ChatMessage = {
         id: Date.now() + 1,
         senderId: selectedProvider.userId,
@@ -46,22 +58,23 @@ export const MessagesPage: React.FC = () => {
         isRead: true,
       };
       setMessages((prev) => [...prev, replyMsg]);
-    }, 1500);
+    }, 1500));
   };
 
+  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Messages</h1><p className="mt-3 text-sm">Live chat is not connected in this interface yet. No messages or automated replies will be sent.</p></div>;
   return (
-    <div className="h-[calc(100vh-8rem)] flex rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+    <div className="designed-page messages-page h-[calc(100vh-8rem)] flex rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
       {/* Conversations List (Sidebar on Desktop) */}
-      <div className="w-full md:w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+      <div className={`${mobileChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-slate-200 dark:border-slate-800 flex-col min-h-0`}>
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 font-bold text-sm text-slate-900 dark:text-slate-100">
-          Messages & Chats
+          <span className="design-eyebrow">STAY IN TOUCH</span><h1 className="chat-title">Your conversations</h1>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
           {MOCK_PROVIDERS.map((pro) => (
             <button
               key={pro.id}
-              onClick={() => setSelectedProvider(pro)}
+              onClick={() => { setSelectedProvider(pro); setMobileChat(true); }}
               className={`w-full p-4 text-left flex items-center gap-3 transition-colors ${
                 selectedProvider.id === pro.id ? 'bg-brand-50 dark:bg-brand-950/60' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
@@ -83,10 +96,11 @@ export const MessagesPage: React.FC = () => {
       </div>
 
       {/* Active Conversation Pane */}
-      <div className="hidden md:flex flex-1 flex-col bg-slate-50/50 dark:bg-slate-950/50">
+      <div className={`${mobileChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 bg-slate-50/50 dark:bg-slate-950/50`}>
         {/* Chat Header */}
         <div className="p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button className="md:hidden app-icon-button" onClick={() => setMobileChat(false)} aria-label="Back to conversations"><ArrowLeft size={18} /></button>
             <div className="relative">
               <img src={selectedProvider.profileImage} alt={selectedProvider.fullName} className="w-10 h-10 rounded-full object-cover" />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
@@ -99,7 +113,8 @@ export const MessagesPage: React.FC = () => {
         </div>
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="chat-feed flex-1 overflow-y-auto p-4 space-y-3" role="log" aria-label="Conversation messages" aria-live="polite">
+          <div className="chat-feed-note"><MessageCircle size={15} /> Keep the little details in one place.<span>Sample conversation</span></div>
           {messages.map((msg) => {
             const isMe = msg.senderId === (user?.id || 2);
             return (
@@ -124,18 +139,17 @@ export const MessagesPage: React.FC = () => {
 
         {/* Input Bar */}
         <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2">
-          <button type="button" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full">
-            <Paperclip className="w-4 h-4" />
-          </button>
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type a message..."
+            aria-label="Your message"
             className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-sm rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none"
           />
           <button
             type="submit"
+            aria-label="Send message"
             className="p-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow transition-colors"
           >
             <Send className="w-4 h-4" />

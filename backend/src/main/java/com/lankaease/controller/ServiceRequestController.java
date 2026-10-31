@@ -27,7 +27,7 @@ public class ServiceRequestController {
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<ServiceRequestResponseDto> createRequest(
             @Valid @RequestBody CreateServiceRequestDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -60,7 +60,7 @@ public class ServiceRequestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ServiceRequestResponseDto> updateStatus(
             @PathVariable Long id,
-            @RequestBody UpdateStatusRequestDto dto,
+            @Valid @RequestBody UpdateStatusRequestDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ResponseEntity.ok(requestService.updateRequestStatus(id, dto, userPrincipal.getId()));
     }

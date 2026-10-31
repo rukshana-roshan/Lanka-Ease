@@ -33,7 +33,7 @@ const HERO_SLIDES: HeroSlide[] = [
     proRating: '4.9',
     proReviews: 124,
     proDistance: '2.1 km away',
-    proAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300'
+    proAvatar: '/images/avatars/person-1.svg'
   },
   {
     id: 2,
@@ -47,7 +47,7 @@ const HERO_SLIDES: HeroSlide[] = [
     proRating: '4.95',
     proReviews: 98,
     proDistance: '1.4 km away',
-    proAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300'
+    proAvatar: '/images/avatars/person-3.svg'
   },
   {
     id: 3,
@@ -61,7 +61,7 @@ const HERO_SLIDES: HeroSlide[] = [
     proRating: '4.88',
     proReviews: 142,
     proDistance: '3.0 km away',
-    proAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300'
+    proAvatar: '/images/avatars/person-2.svg'
   },
   {
     id: 4,
@@ -75,7 +75,7 @@ const HERO_SLIDES: HeroSlide[] = [
     proRating: '4.92',
     proReviews: 210,
     proDistance: '0.8 km away',
-    proAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=300'
+    proAvatar: '/images/avatars/person-6.svg'
   },
   {
     id: 5,
@@ -89,7 +89,7 @@ const HERO_SLIDES: HeroSlide[] = [
     proRating: '4.98',
     proReviews: 87,
     proDistance: '1.2 km away',
-    proAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300'
+    proAvatar: '/images/avatars/person-3.svg'
   }
 ];
 

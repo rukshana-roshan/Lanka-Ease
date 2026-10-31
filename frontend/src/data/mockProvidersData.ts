@@ -1,3 +1,4 @@
+import { brandAvatar } from '../components/BrandAvatar';
 import type { Provider, ServiceCategory } from '../types';
 
 export const MOCK_CATEGORIES: ServiceCategory[] = [
@@ -46,21 +47,6 @@ const LAST_NAMES = [
   'Rajapaksha', 'Tennakoon', 'Peiris', 'Fernandopulle', 'Weerasinghe', 'Herath', 'Pathirana'
 ];
 
-const AVATAR_POOL = [
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=200'
-];
-
 const CATEGORY_TITLES: Record<string, { businessSuffix: string; profession: string; desc: string }> = {
   'Electrical': { businessSuffix: 'Electrical Solutions', profession: 'Licensed Electrician', desc: 'Expert domestic & commercial electrical wiring, circuit diagnostics, DB board repairs, LED installations, and generator setups.' },
   'Plumbing': { businessSuffix: 'Plumbing & Sanitary', profession: 'Master Plumber', desc: 'Overhead water tank leak repair, bathroom fitting, high-pressure unclogging, PVC piping, and water pump maintenance.' },
@@ -97,7 +83,7 @@ export const generateAllProviders = (): Provider[] => {
       const fullName = `${fName} ${lName}`;
       const businessName = `${fName} ${meta.businessSuffix}`;
       const cities = CITIES_LIST[(globalId + i) % CITIES_LIST.length];
-      const avatar = AVATAR_POOL[(globalId + i) % AVATAR_POOL.length];
+      const avatar = brandAvatar(fullName);
       
       const rating = Number((4.5 + ((globalId * 7 + i * 3) % 5) * 0.1).toFixed(1));
       const jobsCount = 30 + ((globalId * 13 + i * 19) % 250);

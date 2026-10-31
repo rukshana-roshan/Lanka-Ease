@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_FAMILY_MEMBERS, api } from '../services/api';
+import { api } from '../services/api';
 import type { FamilyMember } from '../types';
 import { Plus, MapPin, Phone, Heart, ChevronRight } from 'lucide-react';
 
 export const FamilyAssistancePage: React.FC = () => {
   const navigate = useNavigate();
-  const [members, setMembers] = useState<FamilyMember[]>(MOCK_FAMILY_MEMBERS);
+  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [error, setError] = useState('');
+  useEffect(() => { let active = true; api.getFamilyMembers().then(rows => { if (active) setMembers(rows); }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, []);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [name, setName] = useState('');
@@ -17,10 +19,12 @@ export const FamilyAssistancePage: React.FC = () => {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !address) return;
-    const newMember = await api.addFamilyMember({ name, relationship, phone, address });
-    setMembers([...members, newMember]);
-    setShowAddModal(false);
-    setName(''); setPhone(''); setAddress('');
+    setError('');
+    try {
+      const newMember = await api.addFamilyMember({ name, relationship, phone, address });
+      setMembers(previous => [...previous, newMember]); setShowAddModal(false);
+      setName(''); setPhone(''); setAddress('');
+    } catch (error) { setError(error instanceof Error ? error.message : 'The family member could not be saved.'); }
   };
 
   const handleCreateForMember = (member: FamilyMember) => {
@@ -33,7 +37,8 @@ export const FamilyAssistancePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page family-assistance-page space-y-6 pb-24 pt-4">
+      {error && <p role="alert" className="p-3 text-xs bg-rose-50 text-rose-800 rounded-xl">{error}</p>}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -51,6 +56,7 @@ export const FamilyAssistancePage: React.FC = () => {
         </button>
       </div>
 
+<section className="family-care-banner"><img src="/images/ease-family-v2.png" alt="Thoughtful everyday assistance for a Sri Lankan family" /><div><span className="design-eyebrow">CLOSE, EVEN FROM FAR AWAY</span><h2>For the people<br /><em>who mean home.</em></h2><p>Keep your loved ones’ details together and arrange a little help whenever they need it.</p></div></section>
       {/* Family Member Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {members.map((member) => (

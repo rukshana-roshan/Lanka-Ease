@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.Map;
 
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,7 +49,7 @@ public class SecurityEndpointTest {
     }
 
     @Test
-    public void testPublicCatalogAndTrackingEndpoints() throws Exception {
+    public void testPublicCatalogAndPrivateTrackingEndpoints() throws Exception {
         // Public service categories
         mockMvc.perform(get("/api/services"))
                 .andExpect(status().isOk());
@@ -66,23 +65,23 @@ public class SecurityEndpointTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
 
-        // Public request tracking by ID should NOT return 401 Unauthorized
+        // Tracking includes private addresses and requires authentication
         mockMvc.perform(get("/api/requests/1"))
-                .andExpect(status().is(not(401)));
+                .andExpect(status().isUnauthorized());
 
-        // Public request tracking by Code should NOT return 401 Unauthorized
+        // A request code must not bypass authentication
         mockMvc.perform(get("/api/requests/code/REQ-2026-001"))
-                .andExpect(status().is(not(401)));
+                .andExpect(status().isUnauthorized());
 
         // Public reviews by provider
         mockMvc.perform(get("/api/reviews/provider/1"))
                 .andExpect(status().isOk());
 
-        // Public payment webhook
+        // An unconfigured webhook must not acknowledge fake payments
         mockMvc.perform(post("/api/payments/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"order_id\":\"PAY-123\",\"status\":\"COMPLETED\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNotImplemented());
     }
 
     @Test

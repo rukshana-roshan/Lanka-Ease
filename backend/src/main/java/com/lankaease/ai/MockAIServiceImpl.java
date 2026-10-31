@@ -33,7 +33,7 @@ public class MockAIServiceImpl implements AIService {
         String categorySlug = "home-maintenance";
         List<String> questions = new ArrayList<>();
 
-        if (lower.contains("wash") || lower.contains("fridge") || lower.contains("refrigerator") || lower.contains("microwave") || lower.contains("ac") || lower.contains("air conditioner") || lower.contains("oven")) {
+        if (lower.contains("washing machine") || lower.contains("washer") || lower.contains("fridge") || lower.contains("refrigerator") || lower.contains("microwave") || lower.matches("(?s).*\\bac\\b.*") || lower.contains("air conditioner") || lower.contains("oven")) {
             categorySlug = "appliance-repair";
             questions.add("What is the brand and model of your appliance?");
             questions.add("Is the appliance turning on at all or displaying any error code?");
@@ -49,7 +49,7 @@ public class MockAIServiceImpl implements AIService {
             categorySlug = "cleaning";
             questions.add("How many rooms or approximate square footage requires cleaning?");
             questions.add("Do you require cleaning chemicals and tools to be provided?");
-        } else if (lower.contains("car") || lower.contains("van") || lower.contains("bike") || lower.contains("engine") || lower.contains("tire") || lower.contains("brake") || lower.contains("mechanic")) {
+        } else if (lower.matches("(?s).*\\bcar\\b.*") || lower.contains("van") || lower.contains("bike") || lower.contains("engine") || lower.contains("tire") || lower.contains("brake") || lower.contains("mechanic")) {
             categorySlug = "vehicle-repair";
             questions.add("What is the make, model, and year of the vehicle?");
             questions.add("Is the vehicle stranded on the road or at home?");

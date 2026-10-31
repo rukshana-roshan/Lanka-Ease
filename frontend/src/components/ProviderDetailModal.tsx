@@ -27,10 +27,10 @@ export const ProviderDetailModal: React.FC<ProviderDetailModalProps> = ({ provid
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+      <div role="dialog" aria-modal="true" aria-label="Professional details" className="design-dialog relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header Background Cover Banner */}
-        <div className="h-32 bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 relative p-4 flex justify-end items-start">
+        <div className="professional-cover h-32 bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 relative p-4 flex justify-end items-start">
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-950/60 hover:bg-slate-950 text-white flex items-center justify-center backdrop-blur-md transition-colors"

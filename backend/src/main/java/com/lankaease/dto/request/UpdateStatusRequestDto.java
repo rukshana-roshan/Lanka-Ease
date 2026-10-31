@@ -8,8 +8,8 @@ public record UpdateStatusRequestDto(
     @NotNull(message = "New status is required")
     RequestStatus newStatus,
     String notes,
-    BigDecimal finalPrice,
-    BigDecimal labourFee,
-    BigDecimal partsFee,
+    @jakarta.validation.constraints.PositiveOrZero BigDecimal finalPrice,
+    @jakarta.validation.constraints.PositiveOrZero BigDecimal labourFee,
+    @jakarta.validation.constraints.PositiveOrZero BigDecimal partsFee,
     String cancelReason
 ) {}

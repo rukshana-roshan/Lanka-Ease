@@ -9,28 +9,28 @@ const FAMILY_MEMBERS_DEMO = [
     name: 'Mother',
     fullName: 'Kamala Perera',
     location: 'Kandy',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-5.svg',
   },
   {
     id: 2,
     name: 'Father',
     fullName: 'Sunil Perera',
     location: 'Kurunegala',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-5.svg',
   },
   {
     id: 3,
     name: 'Brother',
     fullName: 'Nalin Perera',
     location: 'Gampaha',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-1.svg',
   },
   {
     id: 4,
     name: 'Sister',
     fullName: 'Hiruni Perera',
     location: 'Galle',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    image: '/images/avatars/person-1.svg',
   },
 ];
 

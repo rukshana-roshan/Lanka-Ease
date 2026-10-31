@@ -1,3 +1,4 @@
+import { PageIntro } from '../components/PageIntro';
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2 } from 'lucide-react';
@@ -12,30 +13,25 @@ export const ContactPage: React.FC = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.message) return;
     setLoading(true);
-    await api.submitContactForm(formData);
-    setLoading(false);
-    setSubmitted(true);
+    setError('');
+    try { await api.submitContactForm(formData); setSubmitted(true); }
+    catch (error) { setError(error instanceof Error ? error.message : 'Your message could not be sent. Please try again.'); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="space-y-12 pb-24 pt-4">
+    <div className="designed-page contact-page space-y-12 pb-24 pt-4">
       {/* Page Header */}
-      <div className="bg-slate-900 text-white rounded-3xl p-8 md:p-14 border border-slate-800 shadow-xl space-y-3">
-        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">
-          WE ARE HERE TO HELP
-        </span>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tight">Contact LankaEase</h1>
-        <p className="text-sm md:text-base text-slate-300 max-w-2xl leading-relaxed">
-          Have questions about booking a service, joining as a professional, or family assistance? Reach out to our Sri Lanka support team 24/7.
-        </p>
-      </div>
+      <PageIntro eyebrow="LET’S TALK" title="A helping hand starts here." description="A question about a service, your account, or joining as a professional? Get in touch with the LankaEase team." image="/images/ease-cleaning-v3.png" />
 
+      {error && <p role="alert" className="p-3 text-xs bg-rose-50 text-rose-800 rounded-xl">{error}</p>}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Contact Form (Accepts Input Cleanly) */}
         <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-sm">
@@ -46,7 +42,7 @@ export const ContactPage: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Message Received!</h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                Thank you for contacting LankaEase, <strong className="text-slate-800 dark:text-slate-200">{formData.name}</strong>. Our customer support representative will reach out to your phone ({formData.phone || formData.email}) within 15 minutes.
+                Thank you for contacting LankaEase, <strong className="text-slate-800 dark:text-slate-200">{formData.name}</strong>. Our customer support representative will reach out to your phone ({formData.phone || formData.email}) as soon as possible.
               </p>
               <button
                 onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', subject: 'General Inquiry', message: '' }); }}
@@ -86,9 +82,10 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address *</label>
                 <input
                   type="email"
+                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="name@example.lk"

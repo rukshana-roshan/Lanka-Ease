@@ -76,7 +76,7 @@ export const LiveTrackingSection: React.FC = () => {
                   {/* Floating ETA & Provider Quick Badge */}
                   <div className="absolute bottom-4 left-4 right-4 sm:right-auto bg-slate-900/95 backdrop-blur-md border border-slate-700 p-3 rounded-2xl flex items-center gap-3 shadow-xl">
                     <SafeImage
-                      src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200"
+                      src="/images/avatars/person-1.svg"
                       alt="Kasun Fernando"
                       className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500"
                     />

@@ -26,7 +26,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${lankaease.cors.allowed-origins:https://lanka-ease.netlify.app,https://*.netlify.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
+    @Value("${lankaease.cors.allowed-origins:https://lanka-ease.netlify.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
     private String allowedOrigins;
 
     private final JwtTokenProvider tokenProvider;
@@ -73,7 +73,8 @@ public class SecurityConfig {
                     "/api",
                     "/health",
                     "/error",
-                    "/actuator/**",
+                    "/actuator/health",
+                    "/actuator/info",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
@@ -98,15 +99,14 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/providers/{id}").permitAll()
 
                 // Public service request tracking lookup by ID or Code
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/requests/{id}").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/requests/code/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/requests/**").authenticated()
 
                 // Public provider reviews lookup
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reviews/provider/**").permitAll()
 
                 // Public payment webhooks (PayHere/Stripe) and verification by code
                 .requestMatchers("/api/payments/webhook").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/payments/code/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/payments/code/**").authenticated()
 
                 // Public AI assistance endpoints
                 .requestMatchers("/api/ai/**").permitAll()
@@ -121,7 +121,7 @@ public class SecurityConfig {
             );
 
         // Required for H2 Console frame display in browser
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -135,7 +135,7 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-        configuration.setAllowedOriginPatterns(origins.isEmpty() ? List.of("*") : origins);
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Authorization"));

@@ -37,10 +37,14 @@ public class JwtTokenProvider {
     }
 
     public String generateRefreshToken(UserPrincipal userPrincipal) {
-        return generateTokenFromUserId(userPrincipal.getId(), userPrincipal.getEmail(), userPrincipal.getRole().name(), jwtRefreshExpirationInMs);
+        return generateTypedToken(userPrincipal.getId(), userPrincipal.getEmail(), userPrincipal.getRole().name(), jwtRefreshExpirationInMs, "refresh");
     }
 
     public String generateTokenFromUserId(Long userId, String email, String role, long expirationMs) {
+        return generateTypedToken(userId, email, role, expirationMs, "access");
+    }
+
+    private String generateTypedToken(Long userId, String email, String role, long expirationMs, String type) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
 
@@ -48,6 +52,7 @@ public class JwtTokenProvider {
                 .subject(Long.toString(userId))
                 .claim("email", email)
                 .claim("role", role)
+                .claim("type", type)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
@@ -64,11 +69,18 @@ public class JwtTokenProvider {
         return Long.parseLong(claims.getSubject());
     }
 
+    public boolean validateAccessToken(String token) { return hasType(token, "access"); }
+    public boolean validateRefreshToken(String token) { return hasType(token, "refresh"); }
+    private boolean hasType(String token, String type) {
+        if (!validateToken(token)) return false;
+        return type.equals(Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload().get("type"));
+    }
+
     public boolean validateToken(String authToken) {
         try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(authToken);
             return true;
-        } catch (SecurityException ex) {
+        } catch (io.jsonwebtoken.security.SecurityException ex) {
             logger.error("Invalid JWT signature: {}", ex.getMessage());
         } catch (MalformedJwtException ex) {
             logger.error("Invalid JWT token: {}", ex.getMessage());

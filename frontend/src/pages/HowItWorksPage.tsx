@@ -1,22 +1,13 @@
+import { PageIntro } from '../components/PageIntro';
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { ShieldCheck, CheckCircle2, ArrowRight, MessageSquare } from 'lucide-react';
 
 export const HowItWorksPage: React.FC = () => {
   return (
-    <div className="space-y-12 pb-24 pt-4">
+    <div className="designed-page how-it-works-page space-y-12 pb-24 pt-4">
       {/* Hero Banner */}
-      <div className="bg-slate-900 text-white rounded-3xl p-8 md:p-14 text-center space-y-4 border border-slate-800 shadow-xl">
-        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">
-          SIMPLE & TRANSPARENT PROCESS
-        </span>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tight">
-          How LankaEase Works
-        </h1>
-        <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Connecting everyday Sri Lankan households with verified local service professionals in just 4 easy steps.
-        </p>
-      </div>
+      <PageIntro eyebrow="FROM TO-DO TO ALL SORTED" title="A little help. Four simple steps." description="Find the right professional, arrange a visit, and keep everything together. Here is how everyday tasks become a little easier." image="/images/ease-repair-v3.png" />
 
       {/* 4 Step Process Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

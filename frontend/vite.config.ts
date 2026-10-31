@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  define: mode === 'preview' ? { 'import.meta.env.VITE_ENABLE_DEMO': JSON.stringify('true') } : {},
   plugins: [react()],
   resolve: {
     alias: {
@@ -27,4 +28,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

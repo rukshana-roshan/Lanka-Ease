@@ -4,7 +4,10 @@ import type {
   ServiceRequest,
   FamilyMember,
   SmartAiResponse,
+  User,
+  Invoice,
 } from '../types';
+import { demoStorageKey, isDemoSession, sessionValue, localToday } from './session';
 import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../data/mockProvidersData';
 
 export { MOCK_CATEGORIES, MOCK_PROVIDERS };
@@ -15,7 +18,7 @@ const API_BASE = `${BASE_URL}/api`;
 
 // Helper for JWT Auth headers
 const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem('lankaease_token');
+  const token = sessionValue('lankaease_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -29,7 +32,7 @@ export const MOCK_REQUESTS: ServiceRequest[] = [
     customerId: 2,
     customerName: 'Kamal Perera',
     customerPhone: '+94772345678',
-    customerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    customerImage: '/images/avatars/person-5.svg',
     categoryId: 5,
     categoryName: 'Appliance Repair',
     categorySlug: 'appliance-repair',
@@ -105,270 +108,160 @@ export const MOCK_FAMILY_MEMBERS: FamilyMember[] = [
   },
 ];
 
-// API Methods with automatic backend fallback
+// Demo data is used only after an explicit demo sign-in, never after a failed request.
+const sampleRequests = structuredClone(MOCK_REQUESTS);
+const sampleFamily = structuredClone(MOCK_FAMILY_MEMBERS);
+export function hydrateDemoRecords() {
+  if (!isDemoSession()) return;
+  for (const [kind, records] of [['requests', MOCK_REQUESTS], ['family', MOCK_FAMILY_MEMBERS]] as const) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(demoStorageKey(kind)) || 'null');
+      const seed = kind === 'requests' ? sampleRequests : sampleFamily;
+      (records as unknown[]).splice(0, records.length, ...(Array.isArray(stored) ? stored : structuredClone(seed)));
+    } catch { /* Keep the initial sample data if browser storage is damaged. */ }
+  }
+}
+hydrateDemoRecords();
+function saveDemo(kind: string, records: unknown[]) {
+  localStorage.setItem(demoStorageKey(kind), JSON.stringify(records));
+}
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status = 0) { super(message); this.status = status; }
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...getAuthHeaders(), ...options.headers }, signal: controller.signal });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new ApiError(body.message || `Request failed (${response.status}). Please try again.`, response.status);
+    }
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError('We could not reach the service. Check your connection and try again.');
+  } finally { window.clearTimeout(timeout); }
+}
+
 export const api = {
-  // Service Categories
-  getCategories: async (): Promise<ServiceCategory[]> => {
-    try {
-      const res = await fetch(`${API_BASE}/services`);
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      return MOCK_CATEGORIES;
-    }
-  },
-
-  // Providers
-  getProviders: async (categoryId?: number): Promise<Provider[]> => {
-    try {
-      const url = categoryId ? `${API_BASE}/providers?categoryId=${categoryId}` : `${API_BASE}/providers`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      if (categoryId) {
-        return MOCK_PROVIDERS.filter((p) => p.categories.some((c) => c.id === categoryId));
-      }
-      return MOCK_PROVIDERS;
-    }
-  },
-
+  getCategories: async (): Promise<ServiceCategory[]> => isDemoSession() ? MOCK_CATEGORIES : request('/services'),
+  getProviders: async (categoryId?: number): Promise<Provider[]> => isDemoSession()
+    ? MOCK_PROVIDERS.filter(p => !categoryId || p.categories.some(c => c.id === categoryId))
+    : request(`/providers${categoryId ? `?categoryId=${categoryId}` : ''}`),
   getProviderById: async (id: number): Promise<Provider> => {
-    try {
-      const res = await fetch(`${API_BASE}/providers/${id}`);
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      const found = MOCK_PROVIDERS.find((p) => p.id === Number(id));
-      return found || MOCK_PROVIDERS[0];
-    }
+    if (!isDemoSession()) return request(`/providers/${id}`);
+    const provider = MOCK_PROVIDERS.find(p => p.id === id);
+    if (!provider) throw new ApiError('Professional not found.', 404);
+    return provider;
   },
-
-  // AI Classification
   classifyAiProblem: async (problemDescription: string): Promise<SmartAiResponse> => {
-    try {
-      const res = await fetch(`${API_BASE}/ai/classify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problemDescription }),
-      });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      const lower = problemDescription.toLowerCase();
-      let catName = 'Home Maintenance';
-      let catId = 15;
-      let slug = 'home-maintenance';
-
-      if (lower.includes('wash') || lower.includes('fridge') || lower.includes('ac')) {
-        catName = 'Appliance Repair'; catId = 5; slug = 'appliance-repair';
-      } else if (lower.includes('wire') || lower.includes('light') || lower.includes('socket') || lower.includes('electric') || lower.includes('trip')) {
-        catName = 'Electrical'; catId = 1; slug = 'electrical';
-      } else if (lower.includes('pipe') || lower.includes('leak') || lower.includes('tap') || lower.includes('water')) {
-        catName = 'Plumbing'; catId = 2; slug = 'plumbing';
-      } else if (lower.includes('clean') || lower.includes('sofa')) {
-        catName = 'Home Cleaning'; catId = 4; slug = 'cleaning';
-      } else if (lower.includes('car') || lower.includes('mechanic') || lower.includes('bike')) {
-        catName = 'Vehicle Repair'; catId = 6; slug = 'vehicle-repair';
-      }
-
-      return {
-        suggestedCategoryName: catName,
-        suggestedCategoryId: catId,
-        categorySlug: slug,
-        clarifyingQuestions: [
-          'What is the specific brand or model of the appliance/equipment?',
-          'How long has this issue been occurring?',
-          'Are there any immediate safety hazards?'
-        ],
-        summary: `AI Assistant classified your request as '${catName}'. Top local experts in this category are available now!`,
-        disclaimer: 'AI recommendations help assign the best verified Sri Lankan professional.',
-      };
-    }
+    if (!isDemoSession()) return request('/ai/classify', { method: 'POST', body: JSON.stringify({ problemDescription }) });
+    const text = problemDescription.toLowerCase();
+    const rules: [RegExp, string][] = [
+      [/\b(laptop|computer|pc|virus|software)\b/, 'computer-repair'],
+      [/\b(mobile|phone|smartphone)\b/, 'mobile-repair'],
+      [/\b(clean|cleaning|sofa|dust|wash house)\b/, 'cleaning'],
+      [/\b(washing machine|washer|fridge|refrigerator|ac|air conditioner|oven|microwave)\b/, 'appliance-repair'],
+      [/\b(wire|wiring|light|socket|electric|electrical|breaker|trip)\b/, 'electrical'],
+      [/\b(pipe|leak|leaking|tap|water|drain|sink|toilet)\b/, 'plumbing'],
+      [/\b(carpenter|carpentry|chair|table|door|furniture)\b/, 'carpentry'],
+      [/\b(car|mechanic|bike|engine|brake)\b/, 'vehicle-repair'],
+      [/\b(paint|painting|wall)\b/, 'painting'],
+      [/\b(garden|gardening|lawn|plants)\b/, 'gardening'],
+      [/\b(tutor|tuition|lesson|maths)\b/, 'tutors'],
+      [/\b(move|moving|relocate|transport)\b/, 'moving-transport'],
+    ];
+    const slug = rules.find(([pattern]) => pattern.test(text))?.[1] || 'home-maintenance';
+    const category = MOCK_CATEGORIES.find(c => c.slug === slug)!;
+    return { suggestedCategoryName: category.name, suggestedCategoryId: category.id, categorySlug: slug,
+      clarifyingQuestions: ['When would you prefer the visit?', 'Are there any access instructions?'],
+      summary: `Suggested service: ${category.name}.`, disclaimer: 'Demo categorisation uses keywords; confirm the category before booking.' };
   },
-
-  // Requests
-  createServiceRequest: async (payload: any): Promise<ServiceRequest> => {
-    try {
-      const res = await fetch(`${API_BASE}/requests`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      const category = MOCK_CATEGORIES.find((c) => c.id === payload.categoryId) || MOCK_CATEGORIES[0];
-      const selectedPro = payload.providerId ? MOCK_PROVIDERS.find(p => p.id === payload.providerId) : undefined;
-
-      const newReq: ServiceRequest = {
-        id: Date.now(),
-        requestCode: `REQ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        customerId: 2,
-        customerName: 'Kamal Perera',
-        customerPhone: '+94772345678',
-        categoryId: category.id,
-        categoryName: category.name,
-        categorySlug: category.slug,
-        problemDescription: payload.problemDescription || 'General service request',
-        aiSuggestion: payload.aiSuggestion || `Assigned category: ${category.name}`,
-        address: payload.address || 'No. 45, Galle Road, Colombo 03',
-        latitude: payload.latitude || 6.9147,
-        longitude: payload.longitude || 79.8510,
-        preferredDate: payload.preferredDate || '2026-09-26',
-        preferredTime: payload.preferredTime || '10:00 - 12:00',
-        urgency: payload.urgency || 'NORMAL',
-        status: payload.providerId ? 'ACCEPTED' : 'CREATED',
-        providerId: payload.providerId,
-        providerName: selectedPro?.fullName,
-        providerBusinessName: selectedPro?.businessName,
-        providerPhone: selectedPro?.phone,
-        estimatedPrice: selectedPro ? selectedPro.priceMin : 2500,
-        finalPrice: selectedPro ? selectedPro.priceMin : 2500,
-        mediaUrls: payload.mediaUrls || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      MOCK_REQUESTS.unshift(newReq);
-      return newReq;
-    }
+  createServiceRequest: async (payload: Partial<ServiceRequest> & { isDraft?: boolean }): Promise<ServiceRequest> => {
+    if (!isDemoSession()) return request('/requests', { method: 'POST', body: JSON.stringify(payload) });
+    const category = MOCK_CATEGORIES.find(c => c.id === payload.categoryId);
+    if (!category) throw new ApiError('Choose a valid service category.');
+    const pro = MOCK_PROVIDERS.find(p => p.id === payload.providerId);
+    const family = MOCK_FAMILY_MEMBERS.find(m => m.id === payload.familyMemberId);
+    const user: User = JSON.parse(sessionValue('lankaease_user') || '{}');
+    const now = new Date().toISOString();
+    const record: ServiceRequest = {
+      id: Date.now(), requestCode: `REQ-${new Date().getFullYear()}-${crypto.randomUUID().slice(0,8).toUpperCase()}`,
+      customerId: user.id || 2, customerName: user.fullName || 'Demo customer', customerPhone: user.phone || '',
+      categoryId: category.id, categoryName: category.name, categorySlug: category.slug,
+      problemDescription: payload.problemDescription || '', address: payload.address || '',
+      latitude: payload.latitude ?? 6.9147, longitude: payload.longitude ?? 79.8510,
+      preferredDate: payload.preferredDate || localToday(), preferredTime: payload.preferredTime || '',
+      urgency: payload.urgency || 'NORMAL', status: payload.isDraft ? 'DRAFT' : 'CREATED',
+      providerId: pro?.id, providerName: pro?.fullName, providerBusinessName: pro?.businessName, providerPhone: pro?.phone,
+      familyMemberId: family?.id, familyMemberName: family?.name, familyMemberRelationship: family?.relationship,
+      mediaUrls: payload.mediaUrls || [], estimatedPrice: pro?.priceMin || 2500, aiSuggestion: payload.aiSuggestion,
+      createdAt: now, updatedAt: now,
+    };
+    MOCK_REQUESTS.unshift(record);
+    try { saveDemo('requests', MOCK_REQUESTS); } catch { MOCK_REQUESTS.shift(); throw new ApiError('Browser storage is full. Remove large attachments and try again.'); }
+    return record;
   },
-
   getRequestById: async (id: number): Promise<ServiceRequest> => {
-    try {
-      const res = await fetch(`${API_BASE}/requests/${id}`);
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      return MOCK_REQUESTS.find((r) => r.id === Number(id)) || MOCK_REQUESTS[0];
-    }
+    if (!isDemoSession()) return request(`/requests/${id}`);
+    const record = MOCK_REQUESTS.find(r => r.id === id);
+    if (!record) throw new ApiError('Service request not found.', 404);
+    return record;
   },
-
-  getCustomerRequests: async (): Promise<ServiceRequest[]> => {
-    try {
-      const res = await fetch(`${API_BASE}/requests/customer`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      return MOCK_REQUESTS;
-    }
+  getCustomerRequests: async (): Promise<ServiceRequest[]> => isDemoSession() ? [...MOCK_REQUESTS] : request('/requests/customer'),
+  updateRequestStatus: async (id: number, newStatus: string, notes?: string): Promise<ServiceRequest> => {
+    if (!isDemoSession()) return request(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ newStatus, notes }) });
+    const record = MOCK_REQUESTS.find(r => r.id === id);
+    if (!record) throw new ApiError('Service request not found.', 404);
+    record.status = newStatus as ServiceRequest['status']; record.updatedAt = new Date().toISOString();
+    saveDemo('requests', MOCK_REQUESTS); return record;
   },
-
-  updateRequestStatus: async (requestId: number, newStatus: string, notes?: string): Promise<ServiceRequest> => {
-    try {
-      const res = await fetch(`${API_BASE}/requests/${requestId}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ newStatus, notes }),
-      });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      const req = MOCK_REQUESTS.find((r) => r.id === Number(requestId));
-      if (req) {
-        req.status = newStatus as any;
-      }
-      return req || MOCK_REQUESTS[0];
-    }
+  getFamilyMembers: async (): Promise<FamilyMember[]> => isDemoSession() ? [...MOCK_FAMILY_MEMBERS] : request('/family'),
+  addFamilyMember: async (payload: Pick<FamilyMember, 'name'|'relationship'|'address'> & Partial<FamilyMember>): Promise<FamilyMember> => {
+    if (!isDemoSession()) return request('/family', { method: 'POST', body: JSON.stringify(payload) });
+    const record: FamilyMember = { ...payload, id: Date.now(), createdAt: new Date().toISOString() };
+    MOCK_FAMILY_MEMBERS.push(record);
+    try { saveDemo('family', MOCK_FAMILY_MEMBERS); } catch { MOCK_FAMILY_MEMBERS.pop(); throw new ApiError('Browser storage is full. Please try again.'); }
+    return record;
   },
-
-  // Family Members
-  getFamilyMembers: async (): Promise<FamilyMember[]> => {
-    try {
-      const res = await fetch(`${API_BASE}/family`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      return MOCK_FAMILY_MEMBERS;
-    }
+  submitContactForm: async (payload: { name: string; email: string; phone: string; message: string }) => {
+    const result = await request<{ id?: number }>('/contact', { method: 'POST', body: JSON.stringify(payload) });
+    if (!Number.isFinite(result.id)) throw new ApiError('The server could not confirm that your message was saved. Please contact support directly.');
+    return true;
   },
-
-  addFamilyMember: async (payload: any): Promise<FamilyMember> => {
-    try {
-      const res = await fetch(`${API_BASE}/family`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error();
-      return await res.json();
-    } catch {
-      const newMember: FamilyMember = {
-        id: Date.now(),
-        name: payload.name,
-        relationship: payload.relationship,
-        phone: payload.phone,
-        address: payload.address,
-        createdAt: new Date().toISOString(),
-      };
-      MOCK_FAMILY_MEMBERS.push(newMember);
-      return newMember;
-    }
+  loginUser: (credentials: { email: string; password: string }) => request<{ token: string; accessToken?: string; user: User }>('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  registerCustomer: (data: { fullName: string; email: string; password: string; phone: string }) => request<{ token: string; user: User }>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  registerProvider: (data: { fullName: string; email: string; password: string; phone: string; businessName?: string }) => request<{ token: string; user: User }>('/auth/register/provider', { method: 'POST', body: JSON.stringify(data) }),
+  getInvoices: async (): Promise<Invoice[]> => {
+    const requests = await api.getCustomerRequests();
+    const rows = await Promise.all(requests.map(async record => {
+      try { return await request<Invoice>(`/invoices/request/${record.id}`); }
+      catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
+    }));
+    return rows.filter((row): row is Invoice => row !== null);
   },
-
-  // Contact form submission handler with robust offline fallback
-  submitContactForm: async (payload: { name: string; email: string; phone: string; message: string }): Promise<boolean> => {
-    try {
-      const res = await fetch(`${API_BASE}/contact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error();
-      return true;
-    } catch {
-      console.log('Contact submission saved locally:', payload);
-      return true;
-    }
+  uploadMedia: async (file: File): Promise<string> => {
+    if (!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file.type)) throw new ApiError('Choose a JPG, PNG, WebP, GIF, MP4, or WebM file.');
+    if (file.size > (isDemoSession() ? 2 : 15) * 1024 * 1024) throw new ApiError(isDemoSession() ? 'Demo attachments must be smaller than 2 MB.' : 'Attachments must be smaller than 15 MB.');
+    if (isDemoSession()) return new Promise((resolve, reject) => {
+      const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new ApiError('The file could not be read.')); reader.readAsDataURL(file);
+    });
+    const data = new FormData(); data.append('file', file);
+    const token = sessionValue('lankaease_token');
+    const response = await fetch(`${API_BASE}/uploads`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: data });
+    if (!response.ok) throw new ApiError('The attachment could not be uploaded.', response.status);
+    const body = await response.json(); return new URL(body.url, BASE_URL || location.origin).href;
   },
-
-  // Authentication APIs
-  loginUser: async (credentials: { email: string; password: string }) => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-      if (!res.ok) throw new Error('Login failed');
-      return await res.json();
-    } catch (err) {
-      console.warn('Backend login fallback used:', err);
-      return null;
-    }
-  },
-
-  registerCustomer: async (data: { fullName: string; email: string; password: string; phone: string }) => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Registration failed');
-      return await res.json();
-    } catch (err) {
-      console.warn('Backend customer registration fallback used:', err);
-      return null;
-    }
-  },
-
-  registerProvider: async (data: { fullName: string; email: string; password: string; phone: string; businessName?: string }) => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/register/provider`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Provider registration failed');
-      return await res.json();
-    } catch (err) {
-      console.warn('Backend provider registration fallback used:', err);
-      return null;
-    }
-  },
-
-  getInvoicePdfUrl: (invoiceId: number) => {
-    return `${API_BASE}/invoices/${invoiceId}/pdf`;
+  getInvoicePdfUrl: (invoiceId: number) => `${API_BASE}/invoices/${invoiceId}/pdf`,
+  downloadInvoice: async (invoiceId: number) => {
+    if (isDemoSession()) throw new ApiError('Sample invoices do not have official PDFs. Sign in with a real account to download a saved invoice.');
+    const res = await fetch(`${API_BASE}/invoices/${invoiceId}/pdf`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new ApiError('The invoice could not be downloaded.', res.status);
+    const url = URL.createObjectURL(await res.blob()); const link = document.createElement('a');
+    link.href = url; link.download = `Invoice-${invoiceId}.pdf`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 };

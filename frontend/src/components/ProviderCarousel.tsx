@@ -18,7 +18,7 @@ const DEMO_PROVIDERS: ProviderItem[] = [
     priceMin: 1500,
     priceMax: 3000,
     city: 'Colombo',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+    image: '/images/avatars/person-1.svg',
   },
   {
     id: 2,
@@ -33,7 +33,7 @@ const DEMO_PROVIDERS: ProviderItem[] = [
     priceMin: 1200,
     priceMax: 2500,
     city: 'Colombo',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400',
+    image: '/images/avatars/person-2.svg',
   },
   {
     id: 3,
@@ -48,7 +48,7 @@ const DEMO_PROVIDERS: ProviderItem[] = [
     priceMin: 1000,
     priceMax: 2000,
     city: 'Dehiwala',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+    image: '/images/avatars/person-5.svg',
   },
   {
     id: 4,
@@ -63,7 +63,7 @@ const DEMO_PROVIDERS: ProviderItem[] = [
     priceMin: 2500,
     priceMax: 8500,
     city: 'Nugegoda',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
+    image: '/images/avatars/person-3.svg',
   },
   {
     id: 5,
@@ -78,7 +78,7 @@ const DEMO_PROVIDERS: ProviderItem[] = [
     priceMin: 1500,
     priceMax: 4000,
     city: 'Colombo',
-    image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400',
+    image: '/images/avatars/person-4.svg',
   },
 ];
 

@@ -46,6 +46,10 @@ public class ChatServiceImpl implements ChatService {
             request = requestRepository.findById(requestId).orElse(null);
         }
 
+        if (request != null && (!Objects.equals(request.getCustomer().getId(), customerId)
+                || (request.getProvider() != null && !Objects.equals(request.getProvider().getUser().getId(), providerUserId)))) {
+            throw new org.springframework.security.access.AccessDeniedException("The request does not belong to this conversation.");
+        }
         Conversation conversation = conversationRepository.findByCustomerIdAndProviderId(customerId, providerUserId)
                 .orElseGet(() -> {
                     Conversation c = new Conversation(customer, provider, null);
@@ -98,6 +102,10 @@ public class ChatServiceImpl implements ChatService {
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", senderId));
 
+        if (!Objects.equals(conversation.getCustomer().getId(), senderId)
+                && !Objects.equals(conversation.getProvider().getId(), senderId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not a participant in this conversation.");
+        }
         Message message = new Message(conversation, sender, requestDto.textContent(), requestDto.mediaUrl());
         Message saved = messageRepository.save(message);
 

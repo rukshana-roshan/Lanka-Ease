@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { FileText, Download, CreditCard } from 'lucide-react';
 import { api } from '../services/api';
 
 export const InvoicesPage: React.FC = () => {
-  const invoices = [
+  const sampleInvoices = [
     {
       id: 1,
       invoiceNumber: 'INV-2026-002',
@@ -33,8 +35,12 @@ export const InvoicesPage: React.FC = () => {
     },
   ];
 
+  const { user, isDemo } = useAuth();
+  const [downloadError, setDownloadError] = useState('');
+  const { data: liveInvoices = [], error: loadError } = useQuery({ queryKey: ['invoices', user?.id], queryFn: api.getInvoices, enabled: !isDemo, retry: false });
+  const invoices = isDemo ? sampleInvoices : liveInvoices;
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page invoices-page space-y-6 pb-24 pt-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <FileText className="w-6 h-6 text-brand-600" /> Digital Invoices & Receipts
@@ -44,7 +50,9 @@ export const InvoicesPage: React.FC = () => {
         </p>
       </div>
 
+      {(downloadError || loadError) && <p role="alert" className="p-3 text-xs bg-rose-50 text-rose-800 rounded-xl">{downloadError || loadError?.message}</p>}
       <div className="space-y-4">
+        <div className="invoice-summary"><div><span>Invoice total</span><strong>Rs. {invoices.reduce((sum, inv) => sum + inv.totalAmount, 0).toLocaleString()}</strong></div><div><span>Settled</span><strong>Rs. {invoices.filter(inv => inv.paymentStatus === 'PAID').reduce((sum, inv) => sum + inv.totalAmount, 0).toLocaleString()}</strong></div><div><span>To be paid</span><strong>Rs. {invoices.filter(inv => inv.paymentStatus === 'PENDING').reduce((sum, inv) => sum + inv.totalAmount, 0).toLocaleString()}</strong></div></div>
         {invoices.map((inv) => (
           <div key={inv.id} className="glass-card p-6 rounded-3xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -80,14 +88,12 @@ export const InvoicesPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 pt-2">
-              <a
-                href={api.getInvoicePdfUrl(inv.id)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => { setDownloadError(''); api.downloadInvoice(inv.id).catch(error => setDownloadError(error.message)); }}
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
               >
                 <Download className="w-4 h-4" /> Download Official PDF
-              </a>
+              </button>
 
               {inv.paymentStatus === 'PENDING' && (
                 <Link

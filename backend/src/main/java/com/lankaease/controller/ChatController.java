@@ -59,9 +59,13 @@ public class ChatController {
 
     // STOMP WebSocket Message Endpoint
     @MessageMapping("/chat/{conversationId}")
-    @SendTo("/topic/conversation/{conversationId}")
-    public MessageResponseDto handleWebSocketMessage(@DestinationVariable Long conversationId, SendMessageRequestDto dto) {
+
+    public MessageResponseDto handleWebSocketMessage(@DestinationVariable Long conversationId, SendMessageRequestDto dto, java.security.Principal principal) {
         // Fallback sender ID 2 (Kamal Perera demo) if unauthenticated STOMP payload
-        return chatService.sendMessage(conversationId, 2L, dto);
+        if (!(principal instanceof org.springframework.security.core.Authentication authentication)
+                || !(authentication.getPrincipal() instanceof UserPrincipal user)) {
+            throw new org.springframework.security.access.AccessDeniedException("Authenticated messaging is required.");
+        }
+        return chatService.sendMessage(conversationId, user.getId(), dto);
     }
 }

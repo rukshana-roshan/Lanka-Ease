@@ -11,12 +11,12 @@ interface ProviderProfileModalProps {
 }
 
 const PROVIDER_AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
-  'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=300',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+  '/images/avatars/person-1.svg',
+  '/images/avatars/person-3.svg',
+  '/images/avatars/person-2.svg',
+  '/images/avatars/person-6.svg',
+  '/images/avatars/person-3.svg',
+  '/images/avatars/person-5.svg',
 ];
 
 export const ProviderProfileModal: React.FC<ProviderProfileModalProps> = ({ isOpen, onClose, onSaveProvider }) => {
@@ -96,6 +96,7 @@ export const ProviderProfileModal: React.FC<ProviderProfileModalProps> = ({ isOp
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
         <motion.div
+          role="dialog" aria-modal="true" aria-label="Edit professional profile"
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -104,6 +105,7 @@ export const ProviderProfileModal: React.FC<ProviderProfileModalProps> = ({ isOp
           {/* Close Button */}
           <button
             onClick={onClose}
+            aria-label="Close professional profile"
             className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -126,7 +128,7 @@ export const ProviderProfileModal: React.FC<ProviderProfileModalProps> = ({ isOp
               <div className="relative group">
                 <SafeImage
                   src={profileImage}
-                  fallbackSrc="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300"
+                  fallbackSrc="/images/avatars/person-1.svg"
                   alt={businessName || 'Provider Profile Picture'}
                   className="w-28 h-28 rounded-full object-cover border-4 border-amber-500 shadow-xl"
                 />

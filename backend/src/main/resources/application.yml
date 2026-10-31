@@ -18,13 +18,13 @@ server:
 
 lankaease:
   jwt:
-    secret: 9a6e8b2c4d7f1a3e5b8c0d2e4f6a8b1c3d5e7f9a2b4c6d8e0f2a4b6c8d0e2f4a
+    secret: ${JWT_SECRET:local-development-only-signing-key-change-for-production}
     access-token-expiration-ms: 86400000 # 24 hours
     refresh-token-expiration-ms: 604800000 # 7 days
   upload:
-    dir: ./uploads
+    dir: ${UPLOAD_DIR:./uploads}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://lanka-ease.netlify.app,https://*.netlify.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://lanka-ease.netlify.app,https://lanka-ease-home-refresh.metriconyx1.chatgpt.site,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
   ai:
     provider: mock # mock | openai | gemini
     api-key: ${AI_API_KEY:mock-key}

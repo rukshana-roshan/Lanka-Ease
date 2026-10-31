@@ -21,7 +21,7 @@ public record CreateServiceRequestDto(
 
     Double latitude,
     Double longitude,
-    LocalDate preferredDate,
+    @jakarta.validation.constraints.FutureOrPresent(message = "Choose today or a future date") LocalDate preferredDate,
     String preferredTime,
     Urgency urgency,
     String aiSuggestion,

@@ -1,7 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_CATEGORIES, MOCK_PROVIDERS, MOCK_REQUESTS } from '../services/api';
+import { MOCK_CATEGORIES, api } from '../services/api';
 import { SafeImage } from '../components/SafeImage';
 import { UserProfileModal } from '../components/UserProfileModal';
 import {
@@ -17,12 +18,14 @@ import {
 import { motion } from 'framer-motion';
 
 export const CustomerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
+  const { data: requests = [], error } = useQuery({ queryKey: ['requests', user?.id, isDemo], queryFn: api.getCustomerRequests, retry: false });
+  const { data: providers = [] } = useQuery({ queryKey: ['providers', user?.id, isDemo], queryFn: () => api.getProviders(), retry: false });
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  const activeRequest = MOCK_REQUESTS.find(
+  const activeRequest = requests.find(
     (r) => r.status === 'ON_THE_WAY' || r.status === 'WORKING' || r.status === 'ACCEPTED'
   );
 
@@ -34,7 +37,8 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-24 md:pb-12">
+    <div className="designed-page customer-dashboard space-y-6 pb-24 md:pb-12">
+      {error && <p role="alert" className="p-3 rounded-xl text-xs bg-rose-50 text-rose-800">{error.message}</p>}
       {/* Personalized Greeting & User Picture Section Header */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
@@ -50,7 +54,7 @@ export const CustomerDashboard: React.FC = () => {
               >
                 <SafeImage
                   src={user?.profileImage || ''}
-                  fallbackSrc="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300"
+                  fallbackSrc="/images/avatars/person-5.svg"
                   alt={user?.fullName || 'User Picture'}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-3 border-white/80 shadow-lg group-hover:scale-105 transition-transform"
                 />
@@ -118,14 +122,14 @@ export const CustomerDashboard: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-saffron-500/10 dark:bg-saffron-950/40 border border-saffron-300 dark:border-saffron-800 p-4 rounded-2xl flex items-center justify-between"
+          className="active-service-banner bg-saffron-500/10 dark:bg-saffron-950/40 border border-saffron-300 dark:border-saffron-800 p-4 rounded-2xl flex items-center justify-between gap-3"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-saffron-500 text-slate-950 flex items-center justify-center font-bold shadow-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-saffron-500 text-slate-950 flex items-center justify-center font-bold shadow-md shrink-0">
               <Car className="w-5 h-5 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{activeRequest.categoryName}</h4>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-saffron-500 text-slate-950 rounded-full">
                   {activeRequest.status.replace('_', ' ')}
@@ -180,7 +184,7 @@ export const CustomerDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {MOCK_PROVIDERS.slice(0, 2).map((pro) => (
+          {providers.slice(0, 2).map((pro) => (
             <div key={pro.id} className="glass-card p-4 rounded-2xl flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src={pro.profileImage} alt={pro.fullName} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
@@ -220,7 +224,7 @@ export const CustomerDashboard: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          {MOCK_REQUESTS.map((req) => (
+          {requests.map((req) => (
             <div key={req.id} className="glass-card p-4 rounded-2xl flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">

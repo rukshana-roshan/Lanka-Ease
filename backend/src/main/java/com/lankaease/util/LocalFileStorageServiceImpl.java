@@ -34,18 +34,19 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
             throw new BadRequestException("Failed to store empty file.");
         }
 
-        String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String extension = "";
-        int i = originalFilename.lastIndexOf('.');
-        if (i > 0) {
-            extension = originalFilename.substring(i);
+        var extensions = java.util.Map.of("image/jpeg", ".jpg", "image/png", ".png", "image/webp", ".webp", "image/gif", ".gif", "video/mp4", ".mp4", "video/webm", ".webm");
+        String extension = extensions.get(Objects.toString(file.getContentType(), ""));
+        if (extension == null || file.getSize() > 15L * 1024 * 1024) {
+            throw new BadRequestException("Upload a supported image or video smaller than 15 MB.");
         }
 
         String newFilename = UUID.randomUUID().toString() + extension;
 
         try {
             Path targetLocation = this.uploadPath.resolve(newFilename);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            try (var input = file.getInputStream()) {
+                Files.copy(input, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            }
             return "/uploads/" + newFilename;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + newFilename, ex);

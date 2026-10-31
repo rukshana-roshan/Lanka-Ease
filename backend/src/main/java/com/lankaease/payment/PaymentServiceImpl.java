@@ -17,6 +17,8 @@ import java.util.UUID;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
+    @org.springframework.beans.factory.annotation.Value("${lankaease.payment.mock-enabled:false}")
+    private boolean mockEnabled;
     private final PaymentRepository paymentRepository;
     private final ServiceRequestRepository requestRepository;
     private final InvoiceRepository invoiceRepository;
@@ -38,6 +40,14 @@ public class PaymentServiceImpl implements PaymentService {
         ServiceRequest request = requestRepository.findById(requestDto.requestId())
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceRequest", "id", requestDto.requestId()));
 
+        com.lankaease.security.ResourceAccess.requireRequest(request);
+        if (!request.getCustomer().getId().equals(customerId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Only the request owner can make this payment.");
+        }
+        if (!mockEnabled) throw new BadRequestException("Live payments are not configured. No payment was processed.");
+        if (paymentRepository.existsByRequestIdAndStatus(request.getId(), PaymentStatus.PAID)) {
+            throw new BadRequestException("This request has already been paid.");
+        }
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", customerId));
 
@@ -45,9 +55,11 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BadRequestException("Cannot make payment for a service request without an assigned provider.");
         }
 
-        BigDecimal amount = requestDto.amount();
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            amount = request.getFinalPrice() != null ? request.getFinalPrice() : new BigDecimal("2500.00");
+        BigDecimal amount = invoiceRepository.findByRequestId(request.getId())
+                .map(Invoice::getTotalAmount).orElse(request.getFinalPrice());
+        if (amount == null || amount.signum() <= 0) throw new BadRequestException("A final service amount is required before payment.");
+        if (requestDto.amount() != null && amount.compareTo(requestDto.amount()) != 0) {
+            throw new BadRequestException("The payment amount does not match the final invoice.");
         }
 
         String paymentCode = "PAY-2026-" + String.format("%05d", (int)(Math.random() * 90000 + 10000));
@@ -84,14 +96,15 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponseDto getPaymentByCode(String paymentCode) {
         Payment payment = paymentRepository.findByPaymentCode(paymentCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", "paymentCode", paymentCode));
+        com.lankaease.security.ResourceAccess.requireRequest(payment.getRequest());
         return mapToDto(payment);
     }
 
     @Override
     public PaymentResponseDto getPaymentByRequestId(Long requestId) {
-        Payment payment = paymentRepository.findByCustomerId(requestId).stream()
-                .findFirst()
+        Payment payment = paymentRepository.findFirstByRequestIdOrderByCreatedAtDesc(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment for request ID", "id", requestId));
+        com.lankaease.security.ResourceAccess.requireRequest(payment.getRequest());
         return mapToDto(payment);
     }
 

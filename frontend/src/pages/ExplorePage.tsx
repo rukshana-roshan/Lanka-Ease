@@ -28,7 +28,7 @@ export const ExplorePage: React.FC = () => {
   }, [selectedCatId, verifiedOnly, availableOnly, searchTerm]);
 
   return (
-    <div className="space-y-6 pb-24 pt-4">
+    <div className="designed-page explore-page space-y-6 pb-24 pt-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Explore Professionals</h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Search trusted Sri Lankan local service providers near you</p>
