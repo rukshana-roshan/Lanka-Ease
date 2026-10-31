@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 @Component
-@org.springframework.context.annotation.Profile("dev")
+@org.springframework.context.annotation.Profile("dev & !prod")
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -74,12 +74,6 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         String encodedPassword = passwordEncoder.encode("password123");
-
-        // 2. Admin User
-        User admin = new User("System Admin", "admin@lankaease.lk", "+94771234567", encodedPassword, Role.ADMIN);
-        admin.setProfileImage("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200");
-        admin.setIsEmailVerified(true);
-        userRepository.save(admin);
 
         // 3. Customer User
         User customer = new User("Kamal Perera", "customer@lankaease.lk", "+94772345678", encodedPassword, Role.CUSTOMER);

@@ -20,6 +20,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import com.lankaease.config.DevelopmentAdminInitializer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
+    private final Environment environment;
 
     public AuthServiceImpl(UserRepository userRepository,
                            CustomerProfileRepository customerProfileRepository,
@@ -43,7 +47,8 @@ public class AuthServiceImpl implements AuthService {
                            ServiceAreaRepository serviceAreaRepository,
                            PasswordEncoder passwordEncoder,
                            AuthenticationManager authenticationManager,
-                           JwtTokenProvider tokenProvider) {
+                           JwtTokenProvider tokenProvider,
+                           Environment environment) {
         this.userRepository = userRepository;
         this.customerProfileRepository = customerProfileRepository;
         this.providerProfileRepository = providerProfileRepository;
@@ -52,13 +57,21 @@ public class AuthServiceImpl implements AuthService {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.tokenProvider = tokenProvider;
+        this.environment = environment;
     }
 
     @Override
     public JwtAuthResponse login(LoginRequest request) {
         try {
+            String identifier = request.email();
+            if (request.username() != null && !request.username().isBlank()) {
+                if (!environment.acceptsProfiles(Profiles.of("dev & !prod")) || !"admin".equals(request.username())) {
+                    throw new UnauthorizedException("Invalid email or password");
+                }
+                identifier = DevelopmentAdminInitializer.EMAIL;
+            }
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                    new UsernamePasswordAuthenticationToken(identifier, request.password())
             );
 
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();

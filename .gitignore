@@ -29,3 +29,9 @@ logs/
 site-preview/
 site-preview-deploy.tar.gz
 .design-qa/
+
+# Local backend credentials and certificates
+.env.*
+!.env.example
+!.env.*.example
+backend/secrets/

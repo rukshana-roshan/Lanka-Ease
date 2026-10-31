@@ -39,13 +39,15 @@ Configure these backend variables in the host's secret/environment settings:
 | Variable | Required value |
 | --- | --- |
 | `SPRING_PROFILES_ACTIVE` | `prod` |
-| `DATABASE_URL` | Host-provided PostgreSQL connection URL; the URL processor accepts PostgreSQL or JDBC forms. |
-| `DATABASE_USERNAME`, `DATABASE_PASSWORD` | Required for JDBC URLs without embedded credentials; Railway's `PGUSER`/`PGPASSWORD` are also supported. |
+| `DATABASE_URL` | Supabase session-pooler JDBC URL on port 5432, without embedded credentials. |
+| `DB_USERNAME`, `DB_PASSWORD` | Exact Supabase pooler username and database password, supplied separately. |
+| `DB_SSL_ROOT_CERT` | Absolute path to the Supabase CA certificate; production uses verified TLS. |
+| `DB_MIGRATIONS_ENABLED` | `false` until the schema and demo-seed migration have been reviewed. |
 | `JWT_SECRET` | A newly generated, private random secret of at least 32 bytes. Do not reuse the development secret. |
 | `CORS_ALLOWED_ORIGINS` | Exact HTTPS frontend origin(s), comma-separated. Include the actual production domain. |
 | `UPLOAD_DIR` | A persistent-volume directory, for example `/data/uploads`. |
 
-Attach PostgreSQL and configure backups. Put uploads on persistent storage; container-local files can disappear when the instance is replaced. For multiple API replicas, migrate uploads to shared object storage rather than independent local disks. Health-check path: `/actuator/health`.
+Connect external Supabase PostgreSQL and configure backups. See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for current backend configuration and local VS Code instructions. Put uploads on persistent storage; container-local files can disappear when the instance is replaced. For multiple API replicas, migrate uploads to shared object storage rather than independent local disks. Health-check path: `/actuator/health`.
 
 The repository's `render.yaml` uses free plans and is suitable only for a temporary preview. Select durable plans and persistent storage before accepting real users. Review the V2 SQL migration's sample users and replace/disable demo credentials before public deployment. The Java `DataInitializer` now runs only in the development profile; existing database rows were not deleted or silently modified.
 

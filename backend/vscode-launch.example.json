@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "LankaEase: local development (H2)",
+      "request": "launch",
+      "mainClass": "com.lankaease.LankaEaseApplication",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "SPRING_PROFILES_ACTIVE": "dev",
+        "DATABASE_URL": "jdbc:h2:mem:lankaeasedb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+        "DATABASE_USERNAME": "sa",
+        "DATABASE_PASSWORD": ""
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "java",
+      "name": "LankaEase: Supabase (no migrations)",
+      "request": "launch",
+      "mainClass": "com.lankaease.LankaEaseApplication",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": { "SPRING_PROFILES_ACTIVE": "prod", "DB_MIGRATIONS_ENABLED": "false" },
+      "console": "integratedTerminal"
+    }
+  ]
+}

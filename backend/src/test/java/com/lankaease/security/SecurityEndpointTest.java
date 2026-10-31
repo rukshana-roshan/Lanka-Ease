@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 public class SecurityEndpointTest {
 
     @Autowired
@@ -168,6 +168,15 @@ public class SecurityEndpointTest {
         mockMvc.perform(post("/api/requests")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void developmentUsernameIsRejectedOutsideDevelopment() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "admin", "password", "invalid-test-value"))))
                 .andExpect(status().isUnauthorized());
     }
 }

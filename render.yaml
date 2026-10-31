@@ -10,12 +10,14 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: lankaease-db
-          property: connectionString
-
-databases:
-  - name: lankaease-db
-    databaseName: lankaease
-    user: lankaease_user
-    plan: free
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL_ROOT_CERT
+        value: /etc/secrets/supabase-ca.crt
+      - key: DB_MIGRATIONS_ENABLED
+        value: "false"
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://lanka-ease.netlify.app

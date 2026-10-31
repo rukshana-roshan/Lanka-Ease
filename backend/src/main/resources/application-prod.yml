@@ -3,18 +3,26 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:${POSTGRES_DB:railway}}}
+    url: ${DATABASE_URL}
     driver-class-name: org.postgresql.Driver
-    username: ${DATABASE_USERNAME:${PGUSER:${POSTGRES_USER:postgres}}}
-    password: ${DATABASE_PASSWORD:${PGPASSWORD:${POSTGRES_PASSWORD:postgres}}}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 15000
+      data-source-properties:
+        sslmode: verify-full
+        sslrootcert: ${DB_SSL_ROOT_CERT}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
   flyway:
-    enabled: true
-    baseline-on-migrate: true
+    enabled: ${DB_MIGRATIONS_ENABLED:false}
+    baseline-on-migrate: false
+    clean-disabled: true
     locations: classpath:db/migration
 
 logging:
