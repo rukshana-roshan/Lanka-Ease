@@ -179,6 +179,16 @@ export const adminApi = {
   deleteCategory: (id: number) => request<void>(`/admin/categories/${id}`, { method: 'DELETE' }),
 };
 
+export const providerApi = {
+  getProfile: () => request<Provider>('/providers/me'),
+  getRequests: () => request<ServiceRequest[]>('/requests/provider'),
+  setAvailability: (isAvailable: boolean) => request<Provider>(
+    `/providers/me/availability?${new URLSearchParams({ isAvailable: String(isAvailable) })}`, { method: 'PATCH' }),
+  updateRequest: (id: number, update: { newStatus: ServiceRequest['status']; notes?: string;
+    labourFee?: number; partsFee?: number; finalPrice?: number }) =>
+    request<ServiceRequest>(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(update) }),
+};
+
 export const api = {
   getCategories: async (): Promise<ServiceCategory[]> => isDemoSession() ? MOCK_CATEGORIES : request('/services'),
   getProviders: async (categoryId?: number): Promise<Provider[]> => isDemoSession()

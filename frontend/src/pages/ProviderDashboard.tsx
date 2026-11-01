@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { LiveProviderDashboard } from './LiveProviderDashboard';
 import { MOCK_REQUESTS } from '../services/api';
 import { SafeImage } from '../components/SafeImage';
 import { ProviderProfileModal } from '../components/ProviderProfileModal';
@@ -33,7 +34,7 @@ export const ProviderDashboard: React.FC = () => {
     }));
   };
 
-  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Workspace integration pending</h1><p className="mt-3 text-sm">This management interface currently uses demo records. Live management controls are unavailable until the backend integration is completed.</p></div>;
+  if (!isDemo) return <LiveProviderDashboard />;
   return (
     <div className="designed-page provider-dashboard space-y-6 pb-24 pt-4">
       {/* Header & Provider Picture Section */}
