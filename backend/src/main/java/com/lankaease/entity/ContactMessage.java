@@ -18,4 +18,10 @@ public class ContactMessage {
         this.name = name; this.email = email; this.phone = phone; this.subject = subject; this.message = message;
     }
     public Long getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public String getPhone() { return phone; }
+    public String getSubject() { return subject; }
+    public String getMessage() { return message; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

@@ -12,7 +12,7 @@ import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../data/mockProvidersData';
 
 export { MOCK_CATEGORIES, MOCK_PROVIDERS };
 
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://lanka-ease-production.up.railway.app').trim().replace(/\/$/, '');
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
 const BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl.slice(0, -4) : rawBaseUrl;
 const API_BASE = `${BASE_URL}/api`;
 
@@ -133,19 +133,51 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 12000);
+  const timeout = window.setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...getAuthHeaders(), ...options.headers }, signal: controller.signal });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new ApiError(body.message || `Request failed (${response.status}). Please try again.`, response.status);
     }
+    if (response.status === 204) return undefined as T;
     return await response.json();
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError('We could not reach the service. Check your connection and try again.');
   } finally { window.clearTimeout(timeout); }
 }
+
+export interface AdminStats {
+  totalUsers: number;
+  totalCustomers: number;
+  totalProviders: number;
+  pendingVerifications: number;
+  activeRequests: number;
+  completedRequests: number;
+}
+
+export const adminApi = {
+  getContactMessages: (page = 0) => request<{
+    content: { id: number; name: string; email: string; phone?: string; subject?: string; message: string; createdAt: string }[];
+    page: number; totalPages: number; totalElements: number;
+  }>(`/admin/contact-messages?page=${page}&size=20`),
+  getStats: () => request<AdminStats>('/admin/stats'),
+  getUsers: () => request<User[]>('/admin/users'),
+  updateUser: (user: Pick<User, 'id' | 'fullName' | 'phone' | 'role'>) => {
+    const params = new URLSearchParams({ fullName: user.fullName, phone: user.phone, role: user.role });
+    return request<User>(`/admin/users/${user.id}?${params}`, { method: 'PUT' });
+  },
+  verifyProvider: (id: number, status: Provider['verificationStatus']) =>
+    request<Provider>(`/admin/providers/${id}/verify?${new URLSearchParams({ status })}`, { method: 'PATCH' }),
+  saveCategory: (category: Omit<ServiceCategory, 'id'> & { id?: number }) => {
+    const params = new URLSearchParams({ name: category.name, slug: category.slug,
+      description: category.description, iconName: category.iconName, isActive: String(category.isActive) });
+    return request<ServiceCategory>(`/admin/categories${category.id ? `/${category.id}` : ''}?${params}`,
+      { method: category.id ? 'PUT' : 'POST' });
+  },
+  deleteCategory: (id: number) => request<void>(`/admin/categories/${id}`, { method: 'DELETE' }),
+};
 
 export const api = {
   getCategories: async (): Promise<ServiceCategory[]> => isDemoSession() ? MOCK_CATEGORIES : request('/services'),

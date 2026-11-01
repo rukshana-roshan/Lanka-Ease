@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import { LiveAdminDashboard } from './LiveAdminDashboard';
 import React, { useState } from 'react';
 import {
   ShieldCheck,
@@ -336,7 +337,7 @@ export const AdminDashboard: React.FC = () => {
     requestStatusFilter === 'ALL' || r.status === requestStatusFilter
   );
 
-  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Workspace integration pending</h1><p className="mt-3 text-sm">This management interface currently uses demo records. Live management controls are unavailable until the backend integration is completed.</p></div>;
+  if (!isDemo) return <LiveAdminDashboard />;
   return (
     <div className="designed-page admin-dashboard space-y-6 pb-24 pt-4 text-slate-800 dark:text-slate-100 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Toast Notification Container */}
