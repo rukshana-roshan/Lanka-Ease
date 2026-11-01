@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "lankaease.cors.allowed-origins=https://lanka-ease.netlify.app")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public class SecurityEndpointTest {
@@ -29,6 +29,23 @@ public class SecurityEndpointTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Test
+    public void corsAllowsOnlyConfiguredOriginIncludingAuthorizationPreflight() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/auth/login")
+                        .header("Origin", "https://lanka-ease.netlify.app")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Access-Control-Allow-Origin", "https://lanka-ease.netlify.app"));
+        for (String origin : new String[]{"https://untrusted.example", "http://localhost:5173",
+                "https://lanka-ease.netlify.app.attacker.example"}) {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/auth/login")
+                            .header("Origin", origin).header("Access-Control-Request-Method", "POST"))
+                    .andExpect(status().isForbidden());
+        }
+    }
 
     @Test
     public void testPublicRootAndHealthEndpoints() throws Exception {

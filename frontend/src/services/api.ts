@@ -9,6 +9,8 @@ import type {
 } from '../types';
 import { demoStorageKey, isDemoSession, sessionValue, localToday } from './session';
 import { MOCK_CATEGORIES, MOCK_PROVIDERS } from '../data/mockProvidersData';
+import type { MarketplaceProvider, DirectoryResult, ProfileUpdate, Offering, MarketplaceReview, Verification, ProviderReport } from '../types/marketplace';
+import type { Conversation, Message } from '../types';
 
 export { MOCK_CATEGORIES, MOCK_PROVIDERS };
 
@@ -149,6 +151,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export interface AdminStats {
+  totalRevenue: number;
   totalUsers: number;
   totalCustomers: number;
   totalProviders: number;
@@ -187,6 +190,52 @@ export const providerApi = {
   updateRequest: (id: number, update: { newStatus: ServiceRequest['status']; notes?: string;
     labourFee?: number; partsFee?: number; finalPrice?: number }) =>
     request<ServiceRequest>(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(update) }),
+};
+
+export const mediaUrl = (value?: string) => value?.startsWith('/api/') || value?.startsWith('/uploads/') ? `${BASE_URL}${value}` : value;
+export const marketplaceApi = {
+  directory: (filters: Record<string, string>) => request<DirectoryResult>(`/marketplace/providers?${new URLSearchParams(Object.entries(filters).filter(([,v]) => v !== ''))}`),
+  profile: (id: number) => request<MarketplaceProvider>(`/marketplace/providers/${id}`),
+  mine: () => request<MarketplaceProvider>('/marketplace/me'),
+  availability: (status:string) => request<MarketplaceProvider>(`/marketplace/me/availability?${new URLSearchParams({status})}`,{method:'PATCH'}),
+  saveProfile: (body: ProfileUpdate) => request<MarketplaceProvider>('/marketplace/me', { method: 'PUT', body: JSON.stringify(body) }),
+  saveService: (body: Offering) => request<Offering>(`/marketplace/me/services${body.id ? `/${body.id}` : ''}`, {method: body.id ? 'PUT' : 'POST', body: JSON.stringify(body)}),
+  deactivateService: (id: number) => request<void>(`/marketplace/me/services/${id}`, {method:'DELETE'}),
+  performance: () => request<{totalBookings:number; pendingRequests:number; earnings:number; completedJobs:number; averageRating:number; reviewCount:number}>('/marketplace/me/performance'),
+  reviews: (id: number) => request<MarketplaceReview[]>(`/reviews/provider/${id}`),
+  review: (requestId: number, rating: number, reviewText: string) => request('/reviews', {method:'POST',body:JSON.stringify({requestId,rating,reviewText})}),
+  propose: (id: number, date: string, time: string) => request(`/marketplace/bookings/${id}/reschedule`,{method:'POST',body:JSON.stringify({date,time})}),
+  acceptProposal: (id: number) => request(`/marketplace/bookings/${id}/reschedule/accept`,{method:'POST'}),
+  conversations: () => request<Conversation[]>('/conversations'),
+  startConversation: (providerUserId: number, requestId?: number) => request<Conversation>(`/conversations/start?${new URLSearchParams({providerUserId:String(providerUserId),...(requestId?{requestId:String(requestId)}:{})})}`,{method:'POST'}),
+  messages: (id:number) => request<Message[]>(`/conversations/${id}/messages`),
+  send: (id:number,textContent:string) => request<Message>(`/conversations/${id}/messages`,{method:'POST',body:JSON.stringify({textContent})}),
+  verification: () => request<Verification[]>('/marketplace/me/verification'),
+  submitVerification: (idDocument:string,businessDocument?:string) => request('/marketplace/me/verification',{method:'POST',body:JSON.stringify({idDocument,businessDocument})}),
+  verifications: () => request<Verification[]>('/marketplace/admin/verifications'),
+  decide: (id:number,status:string,notes:string) => request(`/marketplace/admin/verifications/${id}`,{method:'PATCH',body:JSON.stringify({status,notes})}),
+  report: (id:number,reason:string,reviewId?:number) => request(`/marketplace/providers/${id}/reports`,{method:'POST',body:JSON.stringify({reason,reviewId})}),
+  reports: () => request<ProviderReport[]>('/marketplace/admin/reports'),
+  adminProviders: () => request<(MarketplaceProvider & {suspended:boolean})[]>('/marketplace/admin/providers'),
+  adminBookings: (page:number) => request<{content:import('../types').ServiceRequest[];totalPages:number;totalElements:number}>(`/requests?page=${page}&size=20`),
+  moderate: (id:number,status:string,notes:string) => request(`/marketplace/admin/reports/${id}`,{method:'PATCH',body:JSON.stringify({status,notes})}),
+  suspend: (id:number,suspended:boolean) => request(`/marketplace/admin/providers/${id}/suspension?suspended=${suspended}`,{method:'PATCH'}),
+  hideReview: (id:number,hidden:boolean) => request(`/marketplace/admin/reviews/${id}?hidden=${hidden}`,{method:'PATCH'}),
+  upload: async (file:File,purpose:'PROFILE'|'PORTFOLIO'|'VERIFICATION') => {
+    if(!['image/jpeg','image/png','image/gif'].includes(file.type)||file.size>5*1024*1024)throw new ApiError('Choose a JPEG, PNG or GIF image under 5 MB.');
+    const data=new FormData();data.append('file',file);const token=sessionValue('lankaease_token');
+    const response=await fetch(`${API_BASE}/marketplace/media?purpose=${purpose}`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:data});
+    if(!response.ok){const body=await response.json().catch(()=>({}));throw new ApiError(body.message||'Image upload failed.',response.status);}
+    return await response.json() as {id:string;url:string};
+  },
+  setPhoto: (url:string) => request('/marketplace/me/photo',{method:'PATCH',body:JSON.stringify({url})}),
+  privateImage: async (url:string) => {
+    // Resolve only our own API paths; never forward a bearer token to another host.
+    if(!url.startsWith('/api/marketplace/media/'))throw new ApiError('Invalid document location.');
+    const response=await fetch(`${BASE_URL}${url}`,{headers:{Authorization:`Bearer ${sessionValue('lankaease_token')}`}});
+    if(!response.ok)throw new ApiError('Document access failed.',response.status);
+    return URL.createObjectURL(await response.blob());
+  },
 };
 
 export const api = {

@@ -5,6 +5,8 @@ import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +26,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         if (dbUrl == null || dbUrl.isBlank()) dbUrl = environment.getProperty("DATABASE_PRIVATE_URL");
         if (dbUrl == null || dbUrl.isBlank()) dbUrl = environment.getProperty("DATABASE_PUBLIC_URL");
         if (dbUrl == null || dbUrl.isBlank()) {
-            if (production) throw invalidConfiguration();
+            if (production) throw invalidConfiguration("DATABASE_URL is missing.");
             return;
         }
         if (!production && dbUrl.startsWith("jdbc:h2:")) return;
@@ -39,7 +41,7 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 throw invalidConfiguration();
             }
             String userInfo = uri.getRawUserInfo();
-            if (production && userInfo != null) throw invalidConfiguration();
+            if (production && userInfo != null) throw invalidConfiguration("DATABASE_URL must not contain user:password@; use DB_USERNAME and DB_PASSWORD.");
             if (userInfo != null) {
                 String[] credentials = userInfo.split(":", 2);
                 props.put("spring.datasource.username", decode(credentials[0]));
@@ -54,15 +56,32 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                             || key.equals("sslfactory") || key.equals("sslhostnameverifier")
                             || key.equals("sslrootcert")
                             || (key.equals("sslmode") && (parameter.length != 2 || !decode(parameter[1]).equals("verify-full")))) {
-                        throw invalidConfiguration();
+                        throw invalidConfiguration("DATABASE_URL contains credentials or a conflicting TLS query option; use a bare JDBC URL and separate environment variables.");
                     }
                 }
             }
+            if (production) {
+                String username = environment.getProperty("DB_USERNAME");
+                String password = environment.getProperty("DB_PASSWORD");
+                String rootCert = environment.getProperty("DB_SSL_ROOT_CERT");
+                if (username == null || username.isBlank() || password == null || password.isBlank()) {
+                    throw invalidConfiguration("DB_USERNAME and DB_PASSWORD must both be set separately.");
+                }
+                if (rootCert == null || rootCert.isBlank()
+                        || !Files.isRegularFile(Path.of(rootCert)) || !Files.isReadable(Path.of(rootCert))) {
+                    throw invalidConfiguration("DB_SSL_ROOT_CERT must point to a readable Supabase CA certificate file; on Render use /etc/secrets/supabase-ca.crt.");
+                }
+                props.put("spring.datasource.hikari.data-source-properties.sslmode", "verify-full");
+                props.put("spring.datasource.hikari.data-source-properties.sslrootcert", rootCert);
+            }
             int port = uri.getPort() < 0 ? 5432 : uri.getPort();
+            if (port < 1 || port > 65535) throw invalidConfiguration();
             props.put("spring.datasource.url", "jdbc:postgresql://" + uri.getHost() + ":" + port
                     + uri.getRawPath() + (query == null ? "" : "?" + query));
             if (environment.containsProperty("DB_USERNAME")) props.put("spring.datasource.username", environment.getProperty("DB_USERNAME"));
             if (environment.containsProperty("DB_PASSWORD")) props.put("spring.datasource.password", environment.getProperty("DB_PASSWORD"));
+        } catch (DatabaseConfigurationException safeError) {
+            throw safeError;
         } catch (RuntimeException ignored) {
             // URI parser exceptions may contain credentials. Do not attach them.
             throw invalidConfiguration();
@@ -75,6 +94,13 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
     }
 
     private static IllegalArgumentException invalidConfiguration() {
-        return new IllegalArgumentException("Invalid database configuration. Use a PostgreSQL URL without embedded credentials in prod; set DB_USERNAME, DB_PASSWORD and DB_SSL_ROOT_CERT separately. TLS must use verify-full.");
+        return invalidConfiguration("Use jdbc:postgresql://HOST:5432/postgres without embedded credentials; set DB_USERNAME, DB_PASSWORD and DB_SSL_ROOT_CERT separately. TLS must use verify-full.");
+    }
+    private static DatabaseConfigurationException invalidConfiguration(String reason) {
+        return new DatabaseConfigurationException("Invalid database configuration. " + reason);
+    }
+
+    private static final class DatabaseConfigurationException extends IllegalArgumentException {
+        private DatabaseConfigurationException(String message) { super(message); }
     }
 }

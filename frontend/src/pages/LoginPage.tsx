@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api,marketplaceApi } from '../services/api';
 import { DEMO_ENABLED, safeRedirect } from '../services/session';
 import { Logo } from '../components/Logo';
 import { SafeImage } from '../components/SafeImage';
@@ -54,8 +54,8 @@ export const LoginPage: React.FC = () => {
   };
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('customer@lankaease.lk');
-  const [loginPassword, setLoginPassword] = useState('password123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -66,6 +66,7 @@ export const LoginPage: React.FC = () => {
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regBusinessName, setRegBusinessName] = useState('');
+  const [regImageFile,setRegImageFile]=useState<File|null>(null);
   const [regProfileImage, setRegProfileImage] = useState(
     '/images/avatars/person-5.svg'
   );
@@ -80,6 +81,8 @@ export const LoginPage: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if(!['image/jpeg','image/png','image/gif'].includes(file.type)||file.size>5*1024*1024){setAuthError('Choose a JPEG, PNG or GIF image under 5 MB.');return;}
+      setRegImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
@@ -110,7 +113,12 @@ export const LoginPage: React.FC = () => {
       const data = { fullName: regFullName, email: regEmail, password: regPassword, phone: regPhone };
       const response = roleTab === 'PROVIDER' ? await api.registerProvider({ ...data, businessName: regBusinessName }) : await api.registerCustomer(data);
       if (!response.token || !response.user) throw new Error('The server returned an invalid registration response.');
-      login(response.token, { ...response.user, profileImage: regProfileImage }, rememberMe); navigateAfterAuth(response.user.role);
+      login(response.token, response.user, rememberMe);
+      if(roleTab==='PROVIDER'&&regImageFile){
+        try{const image=await marketplaceApi.upload(regImageFile,'PROFILE');await marketplaceApi.setPhoto(image.url);login(response.token,{...response.user,profileImage:image.url},rememberMe);}
+        catch{sessionStorage.setItem('provider-onboarding-warning','Your account was created, but the picture upload failed. Upload it again in your provider profile.');}
+      }
+      navigateAfterAuth(response.user.role);
     } catch (error) { setAuthError(error instanceof Error ? error.message : 'Registration failed. Please try again.'); }
     finally { setIsSubmitting(false); }
   };
@@ -405,6 +413,7 @@ export const LoginPage: React.FC = () => {
                       onChange={(e) => setRegPhone(e.target.value)}
                       className="w-full pl-10 pr-3 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                     />
+                    <p className="mt-2 text-xs text-slate-500">First create your account. Then complete your services, location, working hours, portfolio and verification in the provider workspace.</p>
                   </div>
                 </div>
               </div>

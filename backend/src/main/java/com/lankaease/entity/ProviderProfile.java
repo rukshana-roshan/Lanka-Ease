@@ -42,7 +42,7 @@ public class ProviderProfile {
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
     @Column(name = "rating_avg", precision = 3, scale = 2)
-    private BigDecimal ratingAvg = new BigDecimal("5.00");
+    private BigDecimal ratingAvg = BigDecimal.ZERO;
 
     @Column(name = "jobs_completed_count")
     private Integer jobsCompletedCount = 0;

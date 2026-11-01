@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { demoStorageKey } from '../services/session';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_PROVIDERS } from '../services/api';
+import { LiveMessagesPage } from './LiveMessagesPage';
 import { Send, ArrowLeft, CheckCheck, MessageCircle } from 'lucide-react';
 
 interface ChatMessage {
@@ -61,7 +62,7 @@ export const MessagesPage: React.FC = () => {
     }, 1500));
   };
 
-  if (!isDemo) return <div className="p-6 rounded-xl border border-slate-200 bg-white"><h1 className="text-xl">Messages</h1><p className="mt-3 text-sm">Live chat is not connected in this interface yet. No messages or automated replies will be sent.</p></div>;
+  if (!isDemo) return <LiveMessagesPage />;
   return (
     <div className="designed-page messages-page h-[calc(100vh-8rem)] flex rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
       {/* Conversations List (Sidebar on Desktop) */}

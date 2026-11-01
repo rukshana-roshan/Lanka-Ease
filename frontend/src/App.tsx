@@ -34,6 +34,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 // Public Explore Pages
 import { ServicesPage } from './pages/ServicesPage';
 import { ProvidersPage } from './pages/ProvidersPage';
+import { MarketplaceProfilePage } from './pages/MarketplaceProfilePage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
@@ -109,9 +110,7 @@ const AppContent: React.FC = () => {
           <Route
             path="/providers"
             element={
-              <ProtectedRoute>
                 <AppContainer><ProvidersPage /></AppContainer>
-              </ProtectedRoute>
             }
           />
           <Route
@@ -152,8 +151,9 @@ const AppContent: React.FC = () => {
           <Route path="/app/profile" element={<ProtectedRoute><AppContainer><CustomerDashboard /></AppContainer></ProtectedRoute>} />
 
           {/* Provider App Routes (Require Register or Sign In) */}
-          <Route path="/provider" element={<ProtectedRoute roles={['PROVIDER', 'ADMIN']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
-          <Route path="/provider/*" element={<ProtectedRoute roles={['PROVIDER', 'ADMIN']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/provider" element={<ProtectedRoute roles={['PROVIDER']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
+          <Route path="/providers/:id" element={<AppContainer><MarketplaceProfilePage /></AppContainer>} />
+          <Route path="/provider/*" element={<ProtectedRoute roles={['PROVIDER']}><AppContainer><ProviderDashboard /></AppContainer></ProtectedRoute>} />
 
           {/* Admin App Routes (Require Register or Sign In) */}
           <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AppContainer><AdminDashboard /></AppContainer></ProtectedRoute>} />

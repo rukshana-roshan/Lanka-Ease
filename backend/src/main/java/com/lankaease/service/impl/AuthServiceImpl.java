@@ -150,12 +150,16 @@ public class AuthServiceImpl implements AuthService {
         profile.setUser(savedUser);
         profile.setBusinessName(request.businessName() != null ? request.businessName() : request.fullName() + " Services");
         profile.setDescription(request.description() != null ? request.description() : "Professional service provider on LankaEase.");
-        profile.setExperienceYears(request.experienceYears() != null ? request.experienceYears() : 2);
+        profile.setExperienceYears(request.experienceYears() != null ? request.experienceYears() : 0);
+        profile.setPriceMin(java.math.BigDecimal.ZERO);
+        profile.setPriceMax(java.math.BigDecimal.ZERO);
+        profile.setIsAvailable(false);
         profile.setIsVerified(false);
         profile.setVerificationStatus(VerificationStatus.PENDING);
 
         if (request.categoryIds() != null && !request.categoryIds().isEmpty()) {
             Set<ServiceCategory> categories = new HashSet<>(categoryRepository.findAllById(request.categoryIds()));
+            if(categories.size()!=new HashSet<>(request.categoryIds()).size())throw new BadRequestException("Choose valid service categories");
             profile.setCategories(categories);
         }
 
@@ -163,7 +167,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (request.serviceCities() != null) {
             for (String city : request.serviceCities()) {
-                ServiceArea area = new ServiceArea(savedProfile, city, "Colombo");
+                ServiceArea area = new ServiceArea(savedProfile, city, "");
                 serviceAreaRepository.save(area);
             }
         }

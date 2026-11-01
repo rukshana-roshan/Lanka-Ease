@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Set;
 import java.time.Year;
 import com.lankaease.security.ResourceAccess;
 import com.lankaease.entity.enums.Role;
@@ -27,6 +28,8 @@ import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class ServiceRequestServiceImpl implements ServiceRequestService {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
+    @org.springframework.beans.factory.annotation.Autowired private com.lankaease.marketplace.MarketplaceService marketplace;
 
     private final ServiceRequestRepository requestRepository;
     private final UserRepository userRepository;
@@ -66,6 +69,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         ServiceCategory category = categoryRepository.findById(dto.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceCategory", "id", dto.categoryId()));
+        if(!Boolean.TRUE.equals(category.getIsActive()))throw new BadRequestException("Choose an active service category");
 
         FamilyMember familyMember = null;
         if (dto.familyMemberId() != null) {
@@ -84,6 +88,13 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         String requestCode = "REQ-" + Year.now().getValue() + "-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
 
         ServiceRequest request = new ServiceRequest();
+        if(provider!=null&&(!Boolean.TRUE.equals(provider.getUser().getIsEnabled())||provider.getUser().getRole()!=Role.PROVIDER))throw new BadRequestException("This provider is unavailable");
+        if(dto.serviceId()!=null){
+            var service=em.find(com.lankaease.marketplace.ProviderOffering.class,dto.serviceId());
+            if(service==null||!service.getActive()||provider==null||!service.getProvider().getId().equals(provider.getId())||!service.getCategory().getId().equals(category.getId()))throw new BadRequestException("Choose an active service offered by this provider in the selected category");
+            request.setOffering(service);request.setServiceTitle(service.getTitle());
+        }
+        if(provider!=null&&dto.preferredDate()!=null&&!Boolean.TRUE.equals(dto.isDraft()))marketplace.validateAppointment(provider,dto.preferredDate(),dto.preferredTime(),request.getOffering()==null?0:request.getOffering().getDurationMinutes(),dto.urgency()==Urgency.URGENT);
         request.setRequestCode(requestCode);
         request.setCustomer(customer);
         request.setFamilyMember(familyMember);
@@ -99,6 +110,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         request.setUrgency(dto.urgency() != null ? dto.urgency() : Urgency.NORMAL);
         request.setStatus(dto.isDraft() != null && dto.isDraft() ? RequestStatus.DRAFT : RequestStatus.CREATED);
         request.setEstimatedPrice(provider != null ? provider.getPriceMin() : new BigDecimal("2500.00"));
+        if(request.getOffering()!=null)request.setEstimatedPrice(request.getOffering().getPriceMin());
 
         ServiceRequest saved = requestRepository.save(request);
 
@@ -145,7 +157,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     public List<ServiceRequestResponseDto> getProviderRequests(Long providerUserId) {
         ProviderProfile provider = providerProfileRepository.findByUserId(providerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProviderProfile", "userId", providerUserId));
-        return requestRepository.findByProviderId(provider.getId()).stream().map(this::mapToDto).toList();
+        return requestRepository.findByProviderId(provider.getId()).stream().filter(r->r.getStatus()!=RequestStatus.DRAFT).map(this::mapToDto).toList();
     }
 
     @Override
@@ -156,6 +168,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+        em.lock(request,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         ResourceAccess.requireRequest(request);
         if (currentUser.getRole() == Role.CUSTOMER && (dto.newStatus() != RequestStatus.CANCELLED
                 || dto.finalPrice() != null || dto.labourFee() != null || dto.partsFee() != null)) {
@@ -165,6 +178,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 || request.getStatus() == RequestStatus.REVIEWED || request.getStatus() == RequestStatus.CANCELLED) {
             throw new BadRequestException("This request cannot be changed to that status.");
         }
+        if(dto.newStatus()==RequestStatus.COMPLETED&&(dto.labourFee()==null||dto.partsFee()==null))throw new BadRequestException("Enter actual labour and parts fees before completing a job");
         if (currentUser.getRole() != Role.ADMIN && !isValidTransition(request.getStatus(), dto.newStatus())) {
             throw new BadRequestException("The requested status transition is not valid.");
         }
@@ -174,6 +188,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         if (dto.finalPrice() != null) {
             request.setFinalPrice(dto.finalPrice());
         }
+        if(dto.newStatus()==RequestStatus.COMPLETED)request.setFinalPrice(dto.labourFee().add(dto.partsFee()).add(new BigDecimal("200.00")));
         if (dto.cancelReason() != null) {
             request.setCancelReason(dto.cancelReason());
         }
@@ -208,7 +223,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     }
 
     private boolean isValidTransition(RequestStatus from, RequestStatus to) {
-        if (to == RequestStatus.CANCELLED) return from != RequestStatus.COMPLETED && from != RequestStatus.REVIEWED;
+        if (to == RequestStatus.CANCELLED) return Set.of(RequestStatus.DRAFT,RequestStatus.CREATED,RequestStatus.PROVIDER_FOUND,RequestStatus.ACCEPTED,RequestStatus.ON_THE_WAY,RequestStatus.ARRIVED).contains(from);
         return switch (from) {
             case DRAFT -> to == RequestStatus.CREATED;
             case CREATED, PROVIDER_FOUND -> to == RequestStatus.ACCEPTED;
@@ -286,7 +301,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 r.getCancelReason(),
                 urls,
                 r.getCreatedAt(),
-                r.getUpdatedAt()
+                r.getUpdatedAt(),
+                r.getOffering()==null?null:r.getOffering().getId(),
+                r.getServiceTitle(),r.getProposedDate(),r.getProposedTime()
         );
     }
 }

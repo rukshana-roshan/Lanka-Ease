@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ImageOff } from 'lucide-react';
+import { mediaUrl } from '../services/api';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
@@ -46,4 +47,4 @@ const SafeImageContent: React.FC<SafeImageProps> = ({
   );
 };
 
-export const SafeImage: React.FC<SafeImageProps> = (props) => <SafeImageContent key={`${props.src || ''}|${props.fallbackSrc || ''}`} {...props} />;
+export const SafeImage: React.FC<SafeImageProps> = (props) => <SafeImageContent key={`${props.src || ''}|${props.fallbackSrc || ''}`} {...props} src={mediaUrl(props.src)} />;

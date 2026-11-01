@@ -17,6 +17,7 @@ import java.util.List;
 
 @Service
 public class ReviewServiceImpl implements ReviewService {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
 
     private final ReviewRepository reviewRepository;
     private final ServiceRequestRepository requestRepository;
@@ -38,6 +39,7 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewResponseDto createReview(CreateReviewRequestDto dto, Long customerId) {
         ServiceRequest request = requestRepository.findById(dto.requestId())
                 .orElseThrow(() -> new ResourceNotFoundException("ServiceRequest", "id", dto.requestId()));
+        em.lock(request,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
         if (!request.getCustomer().getId().equals(customerId)) {
             throw new BadRequestException("Only the request owner can submit a review.");
@@ -78,7 +80,6 @@ public class ReviewServiceImpl implements ReviewService {
         Double avg = reviewRepository.getAverageRatingForProvider(provider.getId());
         if (avg != null) {
             provider.setRatingAvg(BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_UP));
-            provider.setJobsCompletedCount(provider.getJobsCompletedCount() + 1);
             providerRepository.save(provider);
         }
 

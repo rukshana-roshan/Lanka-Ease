@@ -6,6 +6,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "reviews")
 public class Review {
+    @Column(name="is_hidden",nullable=false)
+    private boolean hidden=false;
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden=hidden; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

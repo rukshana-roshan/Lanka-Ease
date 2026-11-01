@@ -23,7 +23,7 @@ public final class ResourceAccess {
         var principal = currentUser();
         if (principal.getRole() == Role.ADMIN
                 || Objects.equals(request.getCustomer().getId(), principal.getId())
-                || (request.getProvider() != null
+                || (request.getStatus()!=com.lankaease.entity.enums.RequestStatus.DRAFT && request.getProvider() != null
                     && Objects.equals(request.getProvider().getUser().getId(), principal.getId()))) return;
         throw new AccessDeniedException("This request belongs to another account.");
     }

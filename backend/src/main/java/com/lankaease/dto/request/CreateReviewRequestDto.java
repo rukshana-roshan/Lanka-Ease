@@ -13,6 +13,6 @@ public record CreateReviewRequestDto(
     @Max(value = 5, message = "Rating must be at most 5")
     Integer rating,
 
-    String reviewText,
-    String photoUrl
+    @jakarta.validation.constraints.Size(max=3000) String reviewText,
+    @jakarta.validation.constraints.Size(max=500) String photoUrl
 ) {}

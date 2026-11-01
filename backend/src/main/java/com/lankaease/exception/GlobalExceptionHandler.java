@@ -15,6 +15,10 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> conflict(Exception ex,HttpServletRequest request){
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(409,"CONFLICT","This change conflicts with an existing record. Refresh the page and check duplicate email, phone or service names.",request.getRequestURI()));
+    }
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {

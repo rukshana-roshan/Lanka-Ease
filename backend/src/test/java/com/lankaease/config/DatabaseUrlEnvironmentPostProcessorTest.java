@@ -20,7 +20,8 @@ class DatabaseUrlEnvironmentPostProcessorTest {
     private MockEnvironment production(String url) {
         return new MockEnvironment().withProperty("SPRING_PROFILES_ACTIVE", "prod")
                 .withProperty("DATABASE_URL", url).withProperty("DB_USERNAME", "pool-user")
-                .withProperty("DB_PASSWORD", "test-only-password");
+                .withProperty("DB_PASSWORD", "test-only-password")
+                .withProperty("DB_SSL_ROOT_CERT", "pom.xml");
     }
 
     @Test void jdbcUrlUsesSeparateCredentials() {
@@ -67,6 +68,24 @@ class DatabaseUrlEnvironmentPostProcessorTest {
         env.setActiveProfiles("test");
         process(env);
         assertNull(env.getProperty("spring.datasource.url"));
+    }
+
+    @Test void productionRequiresSeparateCredentialsAndReadableCa() {
+        for (String key : new String[]{"DB_USERNAME", "DB_PASSWORD", "DB_SSL_ROOT_CERT"}) {
+            var env = production("jdbc:postgresql://pooler.example.com/postgres").withProperty(key, "");
+            assertThrows(IllegalArgumentException.class, () -> process(env));
+        }
+        var env = production("jdbc:postgresql://pooler.example.com/postgres")
+                .withProperty("DB_SSL_ROOT_CERT", "missing-certificate.crt");
+        assertThrows(IllegalArgumentException.class, () -> process(env));
+    }
+
+    @Test void productionEnforcesVerifiedTlsEvenWithConflictingEnvironment() {
+        var env = production("jdbc:postgresql://pooler.example.com/postgres")
+                .withProperty("spring.datasource.hikari.data-source-properties.sslmode", "disable");
+        process(env);
+        assertEquals("verify-full", env.getProperty("spring.datasource.hikari.data-source-properties.sslmode"));
+        assertEquals("pom.xml", env.getProperty("spring.datasource.hikari.data-source-properties.sslrootcert"));
     }
 
     @Test void retainsH2DevelopmentSupport() {

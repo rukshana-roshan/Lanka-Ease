@@ -15,6 +15,7 @@ import java.util.List;
 
 @Service
 public class ProviderServiceImpl implements ProviderService {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
 
     private final ProviderProfileRepository providerRepository;
     private final MapService mapService;
@@ -29,7 +30,7 @@ public class ProviderServiceImpl implements ProviderService {
         Boolean verified = verifiedOnly != null && verifiedOnly;
         Boolean available = availableOnly != null && availableOnly;
         List<ProviderProfile> providers = providerRepository.searchProviders(categoryId, verified, available);
-        return providers.stream().map(this::mapToDto).toList();
+        return providers.stream().filter(p->Boolean.TRUE.equals(p.getUser().getIsEnabled())).map(this::mapToDto).toList();
     }
 
     @Override
@@ -74,6 +75,8 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     private ProviderResponseDto mapToDto(ProviderProfile p) {
+        var average=em.createQuery("select avg(r.rating) from Review r where r.provider.id=:id and r.hidden=false",Double.class).setParameter("id",p.getId()).getSingleResult();
+        var completed=em.createQuery("select count(r) from ServiceRequest r where r.provider.id=:id and r.status in (com.lankaease.entity.enums.RequestStatus.COMPLETED,com.lankaease.entity.enums.RequestStatus.REVIEWED)",Long.class).setParameter("id",p.getId()).getSingleResult();
         List<ServiceCategoryResponseDto> categoryDtos = p.getCategories().stream()
                 .map(c -> new ServiceCategoryResponseDto(c.getId(), c.getName(), c.getSlug(), c.getDescription(), c.getIconName(), c.getIsActive()))
                 .toList();
@@ -91,10 +94,10 @@ public class ProviderServiceImpl implements ProviderService {
                 p.getExperienceYears(),
                 p.getPriceMin(),
                 p.getPriceMax(),
-                p.getIsVerified(),
+                Boolean.TRUE.equals(p.getIsVerified()) && p.getVerificationStatus()==com.lankaease.entity.enums.VerificationStatus.APPROVED,
                 p.getVerificationStatus(),
-                p.getRatingAvg(),
-                p.getJobsCompletedCount(),
+                average==null?java.math.BigDecimal.ZERO:java.math.BigDecimal.valueOf(average).setScale(2,java.math.RoundingMode.HALF_UP),
+                completed.intValue(),
                 p.getResponseTimeMinutes(),
                 p.getIsAvailable(),
                 p.getCurrentLatitude() != null ? p.getCurrentLatitude() : 6.9147,

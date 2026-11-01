@@ -5,6 +5,9 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { RequestTimeline } from '../components/RequestTimeline';
 import { InteractiveMap } from '../components/InteractiveMap';
+import { BookingActions } from '../components/BookingActions';
+import { SafeImage } from '../components/SafeImage';
+import { brandAvatar } from '../components/BrandAvatar';
 import {
   Phone,
   MessageSquare,
@@ -17,7 +20,7 @@ import {
 export const RequestTrackingPage: React.FC = () => {
   const { user, isDemo } = useAuth();
   const { id } = useParams<{ id: string }>();
-  const { data: request, error } = useQuery({ queryKey: ['request', id, user?.id, isDemo], queryFn: () => api.getRequestById(Number(id)), retry: false });
+  const { data: request, error } = useQuery({ queryKey: ['request', id, user?.id, isDemo], queryFn: () => api.getRequestById(Number(id)), retry: false, refetchInterval:isDemo?false:15000 });
   const { data: provider } = useQuery({ queryKey: ['provider', request?.providerId, isDemo], queryFn: () => api.getProviderById(request!.providerId!), enabled: !!request?.providerId, retry: false });
   if (error) return <div role="alert" className="p-6 text-sm">{error.message} <Link to="/app/requests">Return to your requests</Link></div>;
   if (!request) return <div className="p-8 text-center text-xs">Loading service request details...</div>;
@@ -59,6 +62,7 @@ export const RequestTrackingPage: React.FC = () => {
       </div>
 
       {/* Live Timeline Component */}
+      <BookingActions request={request} />
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Request Status History</h3>
         <RequestTimeline status={request.status} />
@@ -77,13 +81,13 @@ export const RequestTrackingPage: React.FC = () => {
       {/* Provider Details Card */}
       {provider && <div className="glass-card p-6 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <img src={provider.profileImage} alt={provider.fullName} className="w-14 h-14 rounded-full object-cover border-2 border-brand-500" />
+          <SafeImage src={provider.profileImage} fallbackSrc={brandAvatar(provider.fullName)} alt={provider.fullName} className="w-14 h-14 rounded-full object-cover border-2 border-brand-500" />
           <div>
             <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
               {request.providerBusinessName || provider.businessName}
-              <ShieldCheck className="w-4 h-4 text-brand-600" />
+              {provider.isVerified && provider.verificationStatus==='APPROVED' && <ShieldCheck className="w-4 h-4 text-brand-600" />}
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{request.providerName || provider.fullName} • ⭐ {provider.ratingAvg}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{request.providerName || provider.fullName} · {Number(provider.ratingAvg)>0?`${provider.ratingAvg} stars`:'No reviews yet'}</p>
             <p className="text-[11px] text-slate-400 mt-1">Contact: {request.providerPhone || provider.phone}</p>
           </div>
         </div>

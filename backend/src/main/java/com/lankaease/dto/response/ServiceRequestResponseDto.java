@@ -38,5 +38,9 @@ public record ServiceRequestResponseDto(
     String cancelReason,
     List<String> mediaUrls,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+    Long serviceId,
+    String serviceTitle,
+    LocalDate proposedDate,
+    String proposedTime
 ) {}

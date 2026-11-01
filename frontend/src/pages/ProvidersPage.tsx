@@ -8,8 +8,13 @@ import { Search, ShieldCheck, Star, Eye, MessageSquare, Calendar } from 'lucide-
 import { SafeImage } from '../components/SafeImage';
 import { ProviderDetailModal } from '../components/ProviderDetailModal';
 import type { Provider } from '../types';
+import { MarketplaceDirectory } from './MarketplaceDirectory';
 
 export const ProvidersPage: React.FC = () => {
+  const {isDemo}=useAuth();
+  return isDemo?<DemoProvidersPage/>:<MarketplaceDirectory/>;
+};
+const DemoProvidersPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { user, isDemo } = useAuth();
   const { data: providers = [], error: loadError } = useQuery({ queryKey: ['providers', user?.id, isDemo], queryFn: () => api.getProviders(), retry: false });

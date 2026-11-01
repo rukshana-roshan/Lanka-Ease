@@ -17,6 +17,7 @@ import java.util.Objects;
 
 @Service
 public class ChatServiceImpl implements ChatService {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
@@ -40,10 +41,13 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", customerId));
         User provider = userRepository.findById(providerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", providerUserId));
+        if(customer.getRole()!=com.lankaease.entity.enums.Role.CUSTOMER||provider.getRole()!=com.lankaease.entity.enums.Role.PROVIDER
+                ||!Boolean.TRUE.equals(provider.getIsEnabled())||customerId.equals(providerUserId))throw new BadRequestException("Start a conversation between a customer and an active provider");
+        em.lock(customer,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
         ServiceRequest request = null;
         if (requestId != null) {
-            request = requestRepository.findById(requestId).orElse(null);
+            request = requestRepository.findById(requestId).orElseThrow(()->new ResourceNotFoundException("Request","id",requestId));
         }
 
         if (request != null && (!Objects.equals(request.getCustomer().getId(), customerId)
@@ -77,7 +81,7 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation", "id", conversationId));
 
         if (!Objects.equals(conversation.getCustomer().getId(), userId) && !Objects.equals(conversation.getProvider().getId(), userId)) {
-            throw new BadRequestException("Unauthorized to access conversation messages.");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized to access conversation messages.");
         }
 
         List<Message> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
@@ -96,6 +100,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public MessageResponseDto sendMessage(Long conversationId, Long senderId, SendMessageRequestDto requestDto) {
+        if(requestDto.textContent()==null||requestDto.textContent().isBlank()||requestDto.textContent().length()>5000)throw new BadRequestException("Write a message between 1 and 5000 characters");
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation", "id", conversationId));
 

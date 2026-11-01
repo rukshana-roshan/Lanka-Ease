@@ -15,7 +15,7 @@ export function PageFrame({ children }: { children: ReactNode }) {
     { to: '/app', label: 'Overview', icon: LayoutDashboard }, { to: '/app/requests', label: 'My requests', icon: ListChecks }, { to: '/app/messages', label: 'Messages', icon: MessageCircle }, { to: '/app/family', label: 'Family', icon: HeartHandshake }, { to: '/app/invoices', label: 'Invoices', icon: FileText },
   ] : [{ to: base, label: 'Workspace overview', icon: LayoutDashboard }, { to: '/providers', label: 'Professional directory', icon: ListChecks }, { to: '/services', label: 'Service catalogue', icon: FileText }];
   return <div className={`page-frame ${isWorkspace ? 'workspace-frame' : 'discover-frame'}`} data-page={segments.slice(0, 2).join('-')}>
-    <div className="page-breadcrumb"><Link to="/home">Home</Link>{segments.map((part, i) => <span key={i}><ChevronRight size={12} />{names[part] || (Number(part) ? `Request #${part}` : part)}</span>)}<span className="page-breadcrumb-note"><Leaf size={12} /> Everyday, made easier.</span></div>
+    <div className="page-breadcrumb"><Link to="/home">Home</Link>{segments.map((part, i) => <span key={i}><ChevronRight size={12} />{names[part] || (Number(part) ? `${segments[0] === 'providers' ? 'Professional' : 'Request'} #${part}` : part)}</span>)}<span className="page-breadcrumb-note"><Leaf size={12} /> Everyday, made easier.</span></div>
     {isWorkspace && <nav className="workspace-nav" aria-label="Workspace navigation">{links.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end={to === base}><Icon size={16} />{label}</NavLink>)}{user?.role === 'CUSTOMER' && <Link className="workspace-new" to="/app/request">New request <ArrowUpRight size={16} /></Link>}</nav>}
     <div className="page-body">{children}</div>
   </div>;

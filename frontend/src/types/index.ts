@@ -74,6 +74,10 @@ export interface FamilyMember {
 }
 
 export interface ServiceRequest {
+  serviceId?: number;
+  serviceTitle?: string;
+  proposedDate?: string;
+  proposedTime?: string;
   id: number;
   requestCode: string;
   customerId: number;

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi, api, ApiError } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import type { ServiceCategory, User } from '../types';
+import { MarketplaceAdmin } from '../components/MarketplaceAdmin';
 
 const emptyCategory = { name: '', slug: '', description: '', iconName: 'Wrench', isActive: true };
 const inputClass = 'w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 dark:bg-slate-900 dark:text-slate-100';
@@ -11,7 +12,7 @@ const buttonClass = 'rounded-xl border border-slate-300 px-4 py-2 text-sm font-s
 export function LiveAdminDashboard() {
   const { user } = useAuth();
   const client = useQueryClient();
-  const [tab, setTab] = useState<'overview' | 'users' | 'providers' | 'categories' | 'messages'>('overview');
+  const [tab, setTab] = useState<'overview' | 'users' | 'providers' | 'categories' | 'messages' | 'marketplace'>('overview');
   const [messagePage, setMessagePage] = useState(0);
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -43,10 +44,10 @@ export function LiveAdminDashboard() {
       <button className={buttonClass} disabled={active.isFetching || mutation.isPending} onClick={() => { mutation.reset(); void client.invalidateQueries({ queryKey: key }); }}>Refresh</button>
     </header>
     <nav className="flex flex-wrap gap-2" aria-label="Admin sections">
-      {(['overview', 'users', 'providers', 'categories', 'messages'] as const).map(value => <button key={value}
+      {(['overview', 'users', 'providers', 'categories', 'messages', 'marketplace'] as const).map(value => <button key={value}
         aria-pressed={tab === value} className={`${buttonClass} ${tab === value ? 'bg-emerald-800 text-white' : ''}`}
         onClick={() => { setTab(value); setSearch(''); mutation.reset(); setMessage(''); }}>
-        {{ overview: 'Workspace overview', users: 'Users', providers: 'Professional directory', categories: 'Service catalogue', messages: 'Messages' }[value]}
+        {{ overview: 'Workspace overview', users: 'Users', providers: 'Professional directory', categories: 'Service catalogue', messages: 'Messages', marketplace: 'Marketplace management' }[value]}
       </button>)}
     </nav>
     {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-800">
@@ -57,11 +58,12 @@ export function LiveAdminDashboard() {
     {tab === 'overview' && stats.data && <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
       {Object.entries({ 'Total users': stats.data.totalUsers, Customers: stats.data.totalCustomers, Professionals: stats.data.totalProviders,
         'Pending verifications': stats.data.pendingVerifications, 'Active requests': stats.data.activeRequests,
-        'Completed requests': stats.data.completedRequests }).map(([label, value]) => <article key={label} className="rounded-2xl border border-slate-200 p-5">
+        'Completed requests': stats.data.completedRequests, 'Recorded paid revenue (LKR)': stats.data.totalRevenue }).map(([label, value]) => <article key={label} className="rounded-2xl border border-slate-200 p-5">
         <p className="text-sm text-slate-500">{label}</p><p className="mt-3 text-3xl font-semibold">{value}</p>
       </article>)}
     </div>}
-    {tab !== 'overview' && tab !== 'messages' && <label className="block max-w-md text-sm">Search {tab}<input type="search" className={`${inputClass} mt-2`} value={search} onChange={e => setSearch(e.target.value)} /></label>}
+    {tab === 'marketplace' && <MarketplaceAdmin />}
+    {tab !== 'overview' && tab !== 'messages' && tab !== 'marketplace' && <label className="block max-w-md text-sm">Search {tab}<input type="search" className={`${inputClass} mt-2`} value={search} onChange={e => setSearch(e.target.value)} /></label>}
     {tab === 'messages' && inbox.data && <div className="space-y-4">
       <div><h2 className="text-xl font-semibold">Customer messages</h2><p className="mt-1 text-sm text-slate-500">Contact form submissions, newest first. {inbox.data.totalElements} total.</p></div>
       {inbox.data.content.length === 0 && <p className="rounded-2xl border border-slate-200 p-5">No contact messages on this page.</p>}

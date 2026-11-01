@@ -1,0 +1,9 @@
+**/.env
+**/.env.*
+**/secrets
+**/node_modules
+**/target
+**/.git
+.design-qa
+site-preview
+*.tar.gz

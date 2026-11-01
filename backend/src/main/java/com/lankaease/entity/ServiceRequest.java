@@ -12,6 +12,20 @@ import java.util.List;
 @Entity
 @Table(name = "service_requests")
 public class ServiceRequest {
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="service_id")
+    private com.lankaease.marketplace.ProviderOffering offering;
+    @Column(name="service_title",length=150) private String serviceTitle;
+    @Column(name="proposed_date") private java.time.LocalDate proposedDate;
+    @Column(name="proposed_time",length=50) private String proposedTime;
+    public com.lankaease.marketplace.ProviderOffering getOffering(){return offering;}
+    public void setOffering(com.lankaease.marketplace.ProviderOffering value){offering=value;}
+    public String getServiceTitle(){return serviceTitle;}
+    public void setServiceTitle(String value){serviceTitle=value;}
+    public java.time.LocalDate getProposedDate(){return proposedDate;}
+    public void setProposedDate(java.time.LocalDate value){proposedDate=value;}
+    public String getProposedTime(){return proposedTime;}
+    public void setProposedTime(String value){proposedTime=value;}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

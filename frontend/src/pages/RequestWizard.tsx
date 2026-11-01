@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api, MOCK_CATEGORIES } from '../services/api';
+import { api } from '../services/api';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
+import { MarketplaceBookingForm } from '../components/MarketplaceBookingForm';
 import {
   Wrench,
   Sparkle,
@@ -16,6 +19,12 @@ import { localToday } from '../services/session';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const RequestWizard: React.FC = () => {
+  const location=useLocation();const {isDemo}=useAuth();
+  const providerId=Number(new URLSearchParams(location.search).get('providerId'))||location.state?.providerId;
+  return providerId&&!isDemo?<MarketplaceBookingForm providerId={providerId}/>:<LegacyRequestWizard/>;
+};
+const LegacyRequestWizard: React.FC = () => {
+  const {data: liveCategories=[]}=useQuery({queryKey:['categories'],queryFn:api.getCategories});
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state || {};
@@ -94,7 +103,7 @@ export const RequestWizard: React.FC = () => {
     try {
       const payload = {
         problemDescription,
-        categoryId: categoryId || 1,
+        categoryId: categoryId || undefined,
         familyMemberId: familyMemberId || undefined,
         providerId: providerId || undefined,
         address,
@@ -216,7 +225,7 @@ export const RequestWizard: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">Select or change the category for your request.</p>
 
               <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
-                {MOCK_CATEGORIES.map((cat) => (
+                  {liveCategories.filter(c=>c.isActive).map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategoryId(cat.id)}
@@ -399,7 +408,7 @@ export const RequestWizard: React.FC = () => {
 
               <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-2 text-xs text-slate-700 dark:text-slate-300">
                 <p><strong>Problem:</strong> {problemDescription}</p>
-                <p><strong>Category:</strong> {MOCK_CATEGORIES.find((c) => c.id === categoryId)?.name}</p>
+                <p><strong>Category:</strong> {liveCategories.find((c) => c.id === categoryId)?.name}</p>
                 <p><strong>Address:</strong> {address}</p>
                 <p><strong>Date & Time:</strong> {preferredDate} ({preferredTime})</p>
                 <p><strong>Urgency:</strong> {urgency}</p>

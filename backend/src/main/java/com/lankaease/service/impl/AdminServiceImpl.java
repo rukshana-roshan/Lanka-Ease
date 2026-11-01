@@ -29,6 +29,7 @@ import java.util.List;
 
 @Service
 public class AdminServiceImpl implements AdminService {
+    @org.springframework.beans.factory.annotation.Autowired private com.lankaease.service.ProviderService providerService;
 
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerRepository;
@@ -58,11 +59,11 @@ public class AdminServiceImpl implements AdminService {
         Long totalProviders = (long) userRepository.findByRole(Role.PROVIDER).size();
         Long pendingVerifications = (long) providerRepository.findByVerificationStatus(VerificationStatus.PENDING).size();
 
-        Long activeRequests = requestRepository.countByStatus(RequestStatus.ACCEPTED) + requestRepository.countByStatus(RequestStatus.ON_THE_WAY) + requestRepository.countByStatus(RequestStatus.WORKING);
+        Long activeRequests = java.util.stream.Stream.of(RequestStatus.CREATED,RequestStatus.PROVIDER_FOUND,RequestStatus.ACCEPTED,RequestStatus.ON_THE_WAY,RequestStatus.ARRIVED,RequestStatus.WORKING).mapToLong(requestRepository::countByStatus).sum();
         Long completedRequests = requestRepository.countByStatus(RequestStatus.COMPLETED) + requestRepository.countByStatus(RequestStatus.REVIEWED);
 
         BigDecimal revenue = paymentRepository.calculateTotalRevenue();
-        if (revenue == null) revenue = new BigDecimal("45000.00");
+        if (revenue == null) revenue = BigDecimal.ZERO;
 
         return new AdminDashboardStats(
                 totalUsers,
@@ -199,37 +200,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private ProviderResponseDto mapToProviderDto(ProviderProfile p) {
-        List<ServiceCategoryResponseDto> categoryDtos = p.getCategories().stream()
-                .map(c -> new ServiceCategoryResponseDto(c.getId(), c.getName(), c.getSlug(), c.getDescription(), c.getIconName(), c.getIsActive()))
-                .toList();
-
-        List<String> cities = p.getServiceAreas().stream()
-                .map(ServiceArea::getCityName)
-                .toList();
-
-        return new ProviderResponseDto(
-                p.getId(),
-                p.getUser().getId(),
-                p.getUser().getFullName(),
-                p.getBusinessName(),
-                p.getDescription(),
-                p.getExperienceYears(),
-                p.getPriceMin(),
-                p.getPriceMax(),
-                p.getIsVerified(),
-                p.getVerificationStatus(),
-                p.getRatingAvg(),
-                p.getJobsCompletedCount(),
-                p.getResponseTimeMinutes(),
-                p.getIsAvailable(),
-                p.getCurrentLatitude() != null ? p.getCurrentLatitude() : 6.9147,
-                p.getCurrentLongitude() != null ? p.getCurrentLongitude() : 79.8510,
-                p.getUser().getProfileImage(),
-                p.getUser().getPhone(),
-                p.getUser().getEmail(),
-                categoryDtos,
-                cities
-        );
+        return providerService.getProviderById(p.getId());
     }
 }
 

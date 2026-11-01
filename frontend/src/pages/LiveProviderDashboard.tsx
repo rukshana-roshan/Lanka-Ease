@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, providerApi } from '../services/api';
+import { ApiError, providerApi, marketplaceApi } from '../services/api';
+import { ProviderManagement } from '../components/ProviderManagement';
+import { BookingActions } from '../components/BookingActions';
 import { useAuth } from '../context/AuthContext';
 import type { RequestStatus, ServiceRequest } from '../types';
 
@@ -29,13 +31,14 @@ export function LiveProviderDashboard() {
   const [parts, setParts] = useState('0');
   const [notice, setNotice] = useState('');
   const enabled = user?.role === 'PROVIDER';
-  const profile = useQuery({ queryKey: [...key, 'profile'], queryFn: providerApi.getProfile, enabled, retry: false });
-  const requests = useQuery({ queryKey: [...key, 'requests'], queryFn: providerApi.getRequests, enabled, retry: false });
+  const profile = useQuery({ queryKey: [...key, 'profile'], queryFn: marketplaceApi.mine, enabled, retry: false });
+  const requests = useQuery({ queryKey: [...key, 'requests'], queryFn: providerApi.getRequests, enabled, retry: false, refetchInterval:15000 });
+  const conversations=useQuery({queryKey:['conversations',user?.id],queryFn:marketplaceApi.conversations,enabled,retry:false,refetchInterval:10000});
   const mutation = useMutation({ mutationFn: (operation: () => Promise<unknown>) => operation(),
     onSuccess: async () => {
       setCompletion(null); setNotice('Changes saved.');
       await Promise.all([client.invalidateQueries({ queryKey: key }),
-        client.invalidateQueries({ queryKey: ['requests'] }), client.invalidateQueries({ queryKey: ['providers'] })]);
+        client.invalidateQueries({ queryKey: ['requests'] }), client.invalidateQueries({ queryKey: ['providers'] }), client.invalidateQueries({queryKey:['marketplace-directory']}),client.invalidateQueries({queryKey:['provider-performance']})]);
     },
   });
   const save = (operation: () => Promise<unknown>) => { setNotice(''); mutation.mutate(operation); };
@@ -53,17 +56,19 @@ export function LiveProviderDashboard() {
       <button className={buttonClass} disabled={profile.isFetching || requests.isFetching || mutation.isPending}
         onClick={() => { mutation.reset(); void client.invalidateQueries({ queryKey: key }); }}>Refresh</button>
     </header>
+    <Link className={buttonClass} to="/app/messages">Customer messages ({conversations.data?.reduce((sum,c)=>sum+c.unreadCount,0)||0} unread)</Link>
     {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-800">
       {error instanceof ApiError && [401, 403].includes(error.status) ? 'Your provider session could not be authorized. Sign out and sign in again.' : error.message}
     </div>}
     {notice && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{notice}</p>}
     {(profile.isPending || requests.isPending) && <p role="status">Loading your workspace…</p>}
+    {profile.data && <ProviderManagement provider={profile.data} />}
     {profile.data && <article className="space-y-4 rounded-2xl border border-slate-200 p-5">
       <div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">{profile.data.businessName || profile.data.fullName}</h2>
         <p className="text-sm">{profile.data.fullName} · Verification: {label(profile.data.verificationStatus)}</p></div>
-        <button className={buttonClass} aria-pressed={profile.data.isAvailable} disabled={mutation.isPending}
-          onClick={() => save(() => providerApi.setAvailability(!profile.data!.isAvailable))}>
-          {profile.data.isAvailable ? 'Available — set unavailable' : 'Unavailable — set available'}
+        <button className={buttonClass} aria-pressed={profile.data.details.availabilityStatus==='AVAILABLE'} disabled={mutation.isPending}
+          onClick={() => save(() => marketplaceApi.availability(profile.data!.details.availabilityStatus==='AVAILABLE'?'BUSY':'AVAILABLE'))}>
+          {profile.data.details.availabilityStatus==='AVAILABLE' ? 'Available — set unavailable' : 'Unavailable — set available'}
         </button></div>
       {profile.data.description && <p className="text-sm">{profile.data.description}</p>}
       <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -81,6 +86,7 @@ export function LiveProviderDashboard() {
     <div className="space-y-4">{visible.map(request => <article key={request.id} className="space-y-3 rounded-2xl border border-slate-200 p-5">
       <header className="flex flex-wrap justify-between gap-3"><div><h3 className="font-semibold">{request.categoryName}</h3><p className="text-xs text-slate-500">{request.requestCode}</p></div><span className="text-sm capitalize">{label(request.status)}</span></header>
       <p className="whitespace-pre-wrap break-words text-sm">{request.problemDescription}</p>
+      <BookingActions request={request} />
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="text-slate-500">Customer</dt><dd>{request.customerName}{request.customerPhone && ` · ${request.customerPhone}`}</dd></div>
         <div><dt className="text-slate-500">Address</dt><dd>{request.address}</dd></div>

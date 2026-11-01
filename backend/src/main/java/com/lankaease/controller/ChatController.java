@@ -26,7 +26,7 @@ public class ChatController {
     }
 
     @PostMapping("/start")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ConversationResponseDto> startConversation(
             @RequestParam Long providerUserId,
             @RequestParam(required = false) Long requestId,

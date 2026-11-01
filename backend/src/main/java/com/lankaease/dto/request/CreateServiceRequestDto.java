@@ -8,7 +8,7 @@ import java.util.List;
 
 public record CreateServiceRequestDto(
     @NotBlank(message = "Problem description is required")
-    String problemDescription,
+    @jakarta.validation.constraints.Size(max=5000) String problemDescription,
 
     @NotNull(message = "Service category is required")
     Long categoryId,
@@ -17,14 +17,15 @@ public record CreateServiceRequestDto(
     Long providerId,
 
     @NotBlank(message = "Service address is required")
-    String address,
+    @jakarta.validation.constraints.Size(max=3000) String address,
 
     Double latitude,
     Double longitude,
     @jakarta.validation.constraints.FutureOrPresent(message = "Choose today or a future date") LocalDate preferredDate,
-    String preferredTime,
+    @jakarta.validation.constraints.Size(max=50) String preferredTime,
     Urgency urgency,
     String aiSuggestion,
     List<String> mediaUrls,
-    Boolean isDraft
+    Boolean isDraft,
+    Long serviceId
 ) {}
