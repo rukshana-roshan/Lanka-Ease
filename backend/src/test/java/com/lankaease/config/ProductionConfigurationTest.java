@@ -8,6 +8,16 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProductionConfigurationTest {
+    @Test void productionCorsDefaultsToHostedFrontendAndAllowsAnOverride() {
+        var env = new StandardEnvironment();
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME);
+        env.getPropertySources().addFirst(new MapPropertySource("productionProfile", Map.of("spring.profiles.active", "prod")));
+        ConfigDataEnvironmentPostProcessor.applyTo(env);
+        assertEquals("https://lanka-ease.netlify.app", env.getProperty("lankaease.cors.allowed-origins"));
+        env.getPropertySources().addFirst(new MapPropertySource("customFrontend", Map.of("CORS_ALLOWED_ORIGINS", "https://custom.example.com")));
+        assertEquals("https://custom.example.com", env.getProperty("lankaease.cors.allowed-origins"));
+    }
     @Test void productionLoadsVerifiedTlsAndSchemaValidationWithoutDevelopmentFallbacks() {
         var env = new StandardEnvironment();
         env.getPropertySources().addFirst(new MapPropertySource("testProductionInputs", Map.of(
