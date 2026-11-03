@@ -2,18 +2,18 @@
 
 LankaEase has three parts: a Vite/React static frontend, a Java 21 Spring Boot API, and PostgreSQL. Static frontend hosting alone does not run the Java API or database.
 
-## Suggested combinations
+## Current hosting
 
-| Option | Frontend | API and database | Fit |
-| --- | --- | --- | --- |
-| Recommended | Netlify | Railway + PostgreSQL | Fits the existing project layout and Dockerfiles. |
-| Alternative | Vercel | Railway + PostgreSQL | Suitable when you prefer Vercel's Vite deployment workflow. |
-| One provider | Render Static Site | Render Docker Web Service + PostgreSQL | One dashboard for all three components; use paid compute/database for production. |
-| Alternative frontend | Cloudflare Pages | Railway or Render | Static React hosting; keep this Java API on a Java/container host. |
+| Component | Provider |
+| --- | --- |
+| Frontend | Netlify |
+| Java API | Render |
+| PostgreSQL database | Supabase |
 
-Provider information checked on 31 October 2026. Railway Hobby currently has a $5 monthly minimum with $5 usage included; additional resource usage costs extra. Render's free web service sleeps after 15 idle minutes and its free PostgreSQL database expires after 30 days. These are preview options, not a durable production setup.
-
-Official sources: [Railway pricing](https://railway.com/pricing), [Netlify Vite guide](https://docs.netlify.com/build/frameworks/framework-setup-guides/vite/), [Vercel Vite guide](https://vercel.com/docs/frameworks/frontend/vite), [Render free limits](https://render.com/docs/free), [Cloudflare React guide](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/).
+Railway is not required. Its deployment configuration has been removed from this
+repository. If an old Railway service is connected to GitHub, disconnect its
+repository in Railway to stop deployments triggered by pushes. Removing repository
+configuration does not disconnect an existing Railway service or cancel billing.
 
 ## Frontend deployment
 
