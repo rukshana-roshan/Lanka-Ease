@@ -16,6 +16,7 @@ export function LiveAdminDashboard() {
   const [messagePage, setMessagePage] = useState(0);
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [newUser, setNewUser] = useState<{ fullName: string; email: string; phone: string; password: string } | null>(null);
   const [categoryForm, setCategoryForm] = useState<(typeof emptyCategory & { id?: number }) | null>(null);
   const [message, setMessage] = useState('');
   const key = ['live-admin', user?.id];
@@ -27,7 +28,7 @@ export function LiveAdminDashboard() {
   const mutation = useMutation({
     mutationFn: async (operation: () => Promise<unknown>) => operation(),
     onSuccess: async () => {
-      setEditingUser(null); setCategoryForm(null); setMessage('Changes saved.');
+      setEditingUser(null); setNewUser(null); setCategoryForm(null); setMessage('Changes saved.');
       await Promise.all([client.invalidateQueries({ queryKey: key }),
         client.invalidateQueries({ queryKey: ['categories'] }), client.invalidateQueries({ queryKey: ['providers'] })]);
     },
@@ -46,7 +47,7 @@ export function LiveAdminDashboard() {
     <nav className="flex flex-wrap gap-2" aria-label="Admin sections">
       {(['overview', 'users', 'providers', 'categories', 'messages', 'marketplace'] as const).map(value => <button key={value}
         aria-pressed={tab === value} className={`${buttonClass} ${tab === value ? 'bg-emerald-800 text-white' : ''}`}
-        onClick={() => { setTab(value); setSearch(''); mutation.reset(); setMessage(''); }}>
+        disabled={mutation.isPending} onClick={() => { setTab(value); setSearch(''); setEditingUser(null); setNewUser(null); setCategoryForm(null); mutation.reset(); setMessage(''); }}>
         {{ overview: 'Workspace overview', users: 'Users', providers: 'Professional directory', categories: 'Service catalogue', messages: 'Messages', marketplace: 'Marketplace management' }[value]}
       </button>)}
     </nav>
@@ -79,9 +80,11 @@ export function LiveAdminDashboard() {
         <button className={buttonClass} disabled={messagePage + 1 >= inbox.data.totalPages || inbox.isFetching} onClick={() => setMessagePage(p => p + 1)}>Next</button></div>
     </div>}
     {tab === 'users' && users.data && <div className="space-y-3">
+      <button className={`${buttonClass} bg-emerald-800 text-white`} disabled={mutation.isPending} onClick={() => { setEditingUser(null); setCategoryForm(null); setNewUser({ fullName: '', email: '', phone: '', password: '' }); mutation.reset(); setMessage(''); }}>Add user</button>
       {users.data.filter(u => matches(u.fullName, u.email, u.phone)).map(u => <article key={u.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 p-5">
         <div className="min-w-0"><h2 className="font-semibold">{u.fullName}</h2><p className="break-all text-sm">{u.email}</p><p className="text-sm">{u.phone} · {u.role}</p></div>
-        <button className={buttonClass} disabled={mutation.isPending} onClick={() => { setEditingUser({ ...u }); mutation.reset(); }}>Edit user</button>
+        <div className="flex gap-2"><button className={buttonClass} disabled={mutation.isPending} onClick={() => { setNewUser(null); setEditingUser({ ...u }); mutation.reset(); setMessage(''); }}>Edit user</button>
+          <button className={`${buttonClass} text-red-700`} disabled={mutation.isPending || u.id === user?.id} onClick={() => { if (window.confirm(`Delete user "${u.fullName}" (${u.email})? This cannot be undone. Users with linked records may not be deleted.`)) save(() => adminApi.deleteUser(u.id)); }}>Delete user</button></div>
       </article>)}
       {!users.data.some(u => matches(u.fullName, u.email, u.phone)) && <p>No users match your search.</p>}
     </div>}
@@ -103,6 +106,17 @@ export function LiveAdminDashboard() {
           <button className={buttonClass} disabled={mutation.isPending} onClick={() => { if (window.confirm(`Delete category "${c.name}"? This cannot be undone.`)) save(() => adminApi.deleteCategory(c.id)); }}>Delete</button></div>
       </article>)}
       {categories.data && !categories.data.some(c => matches(c.name, c.description)) && <p>No service categories match your search.</p>}
+    </div>}
+    {newUser && <div className="rounded-2xl border border-emerald-700 p-5">
+      <h2 className="mb-4 text-xl font-semibold">Add user</h2>
+      <p className="mb-4 text-sm">New users start as customers. Use Edit user after creation to assign another role.</p>
+      <form className="grid max-w-xl gap-4" onSubmit={e => { e.preventDefault(); if (new TextEncoder().encode(newUser.password).length > 72) { window.alert('Password must be at most 72 bytes.'); return; } save(() => adminApi.createUser(newUser)); }}>
+        <label>Full name<input className={inputClass} required maxLength={100} autoComplete="name" value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} /></label>
+        <label>Email<input className={inputClass} type="email" required maxLength={150} autoComplete="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} /></label>
+        <label>Phone<input className={inputClass} type="tel" required maxLength={20} autoComplete="tel" value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} /></label>
+        <label>Initial password<input className={inputClass} type="password" required minLength={8} maxLength={64} autoComplete="new-password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} /></label>
+        <div className="flex gap-2"><button className={`${buttonClass} bg-emerald-800 text-white`} disabled={mutation.isPending}>{mutation.isPending ? 'Creating…' : 'Create user'}</button><button type="button" className={buttonClass} disabled={mutation.isPending} onClick={() => setNewUser(null)}>Cancel</button></div>
+      </form>
     </div>}
     {(editingUser || categoryForm) && <div className="rounded-2xl border border-emerald-700 p-5">
       <h2 className="mb-4 text-xl font-semibold">{editingUser ? 'Edit user' : categoryForm?.id ? 'Edit category' : 'Add category'}</h2>

@@ -161,6 +161,8 @@ export interface AdminStats {
 }
 
 export const adminApi = {
+  createUser: (body: { fullName: string; email: string; phone: string; password: string }) => request<User>('/admin/users', { method: 'POST', body: JSON.stringify(body) }),
+  deleteUser: (id: number) => request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
   getContactMessages: (page = 0) => request<{
     content: { id: number; name: string; email: string; phone?: string; subject?: string; message: string; createdAt: string }[];
     page: number; totalPages: number; totalElements: number;

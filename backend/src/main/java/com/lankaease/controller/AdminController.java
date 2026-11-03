@@ -35,7 +35,7 @@ public class AdminController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<UserResponseDto> createUser(@RequestBody RegisterCustomerRequest request) {
+    public ResponseEntity<UserResponseDto> createUser(@jakarta.validation.Valid @RequestBody RegisterCustomerRequest request) {
         return ResponseEntity.ok(adminService.createUser(request));
     }
 
