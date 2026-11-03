@@ -290,6 +290,7 @@ export const LoginPage: React.FC = () => {
                   />
                   <span>Remember me on this device</span>
                 </label>
+                <Link to="/forgot-password" className="text-xs font-semibold text-emerald-700 hover:underline">Forgot password?</Link>
               </div>
 
               <button

@@ -239,6 +239,8 @@ export const marketplaceApi = {
 };
 
 export const api = {
+  forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) => request<{ message: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
   getCategories: async (): Promise<ServiceCategory[]> => isDemoSession() ? MOCK_CATEGORIES : request('/services'),
   getProviders: async (categoryId?: number): Promise<Provider[]> => isDemoSession()
     ? MOCK_PROVIDERS.filter(p => !categoryId || p.categories.some(c => c.id === categoryId))

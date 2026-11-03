@@ -4,7 +4,8 @@ $ErrorActionPreference = 'Stop'
 $envPath = Join-Path $PSScriptRoot '.env'
 if (!(Test-Path -LiteralPath $envPath)) { throw 'Missing backend/.env. Copy .env.example and fill it in locally.' }
 $allowedKeys = @('SPRING_PROFILES_ACTIVE','DATABASE_URL','DB_USERNAME','DB_PASSWORD',
-    'DB_SSL_ROOT_CERT','JWT_SECRET','DB_MIGRATIONS_ENABLED','CORS_ALLOWED_ORIGINS')
+    'DB_SSL_ROOT_CERT','JWT_SECRET','DB_MIGRATIONS_ENABLED','CORS_ALLOWED_ORIGINS',
+    'PASSWORD_RESET_RESEND_API_KEY','PASSWORD_RESET_FROM','PASSWORD_RESET_FRONTEND_URL')
 foreach ($line in [IO.File]::ReadAllLines($envPath)) {
     if ($line.Trim() -eq '' -or $line.TrimStart().StartsWith('#')) { continue }
     $pair = $line.Split('=', 2)

@@ -20,6 +20,7 @@ import { WelcomeLandingPage } from './pages/WelcomeLandingPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { PasswordResetPage } from './pages/PasswordResetPage';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { RequestWizard } from './pages/RequestWizard';
 import { RequestTrackingPage } from './pages/RequestTrackingPage';
@@ -65,7 +66,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: Role[] }> = 
 const AppContent: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated, isDemo } = useAuth();
-  const isPublicPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
+  const isPublicPage = ['/', '/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
   const showNav = !isPublicPage && isAuthenticated;
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -81,6 +82,8 @@ const AppContent: React.FC = () => {
 
       <main className="flex-1 w-full">
         <Routes>
+          <Route path="/forgot-password" element={<PasswordResetPage />} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
           {/* Public Welcome Landing Page */}
           <Route path="/" element={<WelcomeLandingPage />} />
 
